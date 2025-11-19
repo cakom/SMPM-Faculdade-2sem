@@ -1,6 +1,4 @@
-<!-- views/MaintenanceDetails.vue - Detalhes completos de uma manutenção -->
-<!-- Exibe histórico, informações detalhadas e permite edição -->
-
+// ...existing code...
 <template>
   <div class="space-y-6">
     <!-- Loading state -->
@@ -354,7 +352,7 @@ const showDeleteModal = ref(false)
 // Computed: Manutenção atual
 const maintenance = computed(() => {
   const id = route.params.id
-  return store.maintenances.find(m => m.id === id)
+  return store.maintenances.find(m => String(m.id) === String(id))
 })
 
 // Computed: Dados da store
@@ -376,14 +374,12 @@ const machineDetails = computed(() => {
 
 // Computed: Estatísticas da máquina
 const machineStats = computed(() => {
-  if (!maintenance.value) return {}
+  if (!maintenance.value) return { total: 0, ultimaManutencao: 'N/A', proximaManutencao: 'Não programada' }
   
-  // Filtra manutenções da mesma máquina
   const machineMaintenances = store.maintenances.filter(
     m => m.maquinaId === maintenance.value.maquinaId
   )
   
-  // Ordena por data
   const sorted = [...machineMaintenances].sort(
     (a, b) => new Date(b.data) - new Date(a.data)
   )
@@ -392,7 +388,6 @@ const machineStats = computed(() => {
     ? new Date(sorted[0].data).toLocaleDateString('pt-BR')
     : 'N/A'
   
-  // Encontra próxima manutenção programada
   const today = new Date()
   const proximas = machineMaintenances.filter(
     m => new Date(m.data) > today && m.status === 'pendente'
@@ -409,12 +404,83 @@ const machineStats = computed(() => {
   }
 })
 
+// Helpers (declarações de função para serem hoisted e usadas abaixo)
+function getStatusBadgeClass(status) {
+  switch (status) {
+    case 'concluido': return 'bg-green-100 text-green-800'
+    case 'pendente': return 'bg-yellow-100 text-yellow-800'
+    case 'atrasado': return 'bg-red-100 text-red-800'
+    default: return 'bg-gray-100 text-gray-800'
+  }
+}
+
+function getStatusLabel(status) {
+  if (!status) return 'Desconhecido'
+  const map = { concluido: 'Concluído', pendente: 'Pendente', atrasado: 'Atrasado' }
+  return map[status] || status
+}
+
+function formatDate(d) {
+  if (!d) return ''
+  try { return new Date(d).toLocaleString('pt-BR') } catch { return String(d) }
+}
+
+function capitalizeFirst(s) {
+  if (!s) return ''
+  return String(s).charAt(0).toUpperCase() + String(s).slice(1)
+}
+
 // Computed: Timeline de histórico
 const timeline = computed(() => {
   if (!maintenance.value) return []
   
-  // Simulação de timeline (em produção, viria do backend)
   return [
     {
       title: 'Manutenção criada',
-      description: `Criada por ${maintenance.value.tecnico}
+      description: `Criada por ${maintenance.value.tecnico}`,
+      time: formatDate(maintenance.value.data),
+      color: 'bg-blue-500'
+    },
+    {
+      title: 'Status atualizado',
+      description: `Status atual: ${getStatusLabel(maintenance.value.status)}`,
+      time: formatDate(maintenance.value.data),
+      color: 'bg-gray-400'
+    }
+  ]
+})
+
+// Lifecycle: fechar warning de import não usado e carregar dados se disponível
+onMounted(() => {
+  if (store.fetchMaintenances) store.fetchMaintenances()
+  if (store.fetchMachines) store.fetchMachines()
+})
+
+// Handlers usados no template
+function handlePrintReport() {
+  window.print()
+}
+
+function handleDuplicateMaintenance() {
+  router.push({ name: 'CreateMaintenance', query: { duplicateFrom: route.params.id } })
+}
+
+function handleDeleteMaintenance() {
+  showDeleteModal.value = true
+}
+
+async function confirmDelete() {
+  if (!maintenance.value) return
+  if (store.deleteMaintenance) {
+    await store.deleteMaintenance(maintenance.value.id)
+  }
+  router.push('/manutencoes')
+}
+
+async function handleUpdateMaintenance(updated) {
+  if (store.updateMaintenance) {
+    await store.updateMaintenance(updated)
+  }
+  showEditModal.value = false
+}
+</script>

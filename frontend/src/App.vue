@@ -41,8 +41,6 @@
 import Sidebar from './components/Sidebar.vue'
 import Navbar from './components/Navbar.vue'
 
-// Importa componente de exemplo
-import HelloWorld from './components/HelloWorld.vue'
 </script>
 
 <style scoped>
