@@ -1,71 +1,289 @@
-<!-- App.vue - Componente principal da aplicação -->
-<!-- Estrutura base com Sidebar, Navbar e conteúdo dinâmico -->
+<!--
+  App.vue - COM PINIA STORE
+-->
 
 <template>
-  <div class="flex h-screen bg-gray-50">
-    <!-- Sidebar de navegação -->
-    <Sidebar />
+  <div id="app">
+    
+    <!-- Menu só aparece se estiver logado -->
+    <header v-if="userStore.isAuthenticated && $route.path !== '/login'">
+      <div class="menu-container">
+        <h1>🔧 Sistema de Manutenção</h1>
+        
+        <nav class="menu">
+          <router-link to="/" class="menu-item">🏠 Home</router-link>
+          <router-link to="/maquinas" class="menu-item">🏭 Máquinas</router-link>
+          <router-link to="/manutencoes" class="menu-item">🔧 Manutenções</router-link>
+          <router-link to="/relatorios" class="menu-item">📊 Relatórios</router-link>
+        </nav>
+        
+        <div class="user-info">
+          <span>👤 {{ userStore.userName }}</span>
+          <button @click="fazerLogout" class="btn-logout">🚪 Sair</button>
+        </div>
+      </div>
+    </header>
 
-    <!-- Área principal -->
-    <div class="flex-1 flex flex-col overflow-hidden">
-      <!-- Navbar superior -->
-      <Navbar />
+    <!-- Conteúdo das páginas -->
+    <main :class="{ 'with-header': userStore.isAuthenticated }">
+      <router-view></router-view>
+    </main>
 
-      <!-- Conteúdo dinâmico -->
-      <main class="flex-1 overflow-y-auto p-6">
-        <router-view v-slot="{ Component }">
-          <transition name="fade" mode="out-in">
-            <component :is="Component" />
-          </transition>
-        </router-view>
-
-        <!-- Conteúdo inicial (logos + HelloWorld) -->
-        <section class="mt-8 text-center">
-          <div class="flex justify-center gap-6">
-            <a href="https://vite.dev" target="_blank">
-              <img src="/vite.svg" class="logo" alt="Vite logo" />
-            </a>
-            <a href="https://vuejs.org/" target="_blank">
-              <img src="./assets/vue.svg" class="logo vue" alt="Vue logo" />
-            </a>
-          </div>
-          <HelloWorld msg="Vite + Vue + Tailwind" />
-        </section>
-      </main>
-    </div>
   </div>
 </template>
 
-<script setup>
-// Importa componentes de layout
-import Sidebar from './components/Sidebar.vue'
-import Navbar from './components/Navbar.vue'
+<script>
+import { useUserStore } from './stores/userStore'; // Importa a store
 
+export default {
+  name: 'App',
+  
+  setup() {
+    // ===== PINIA STORE =====
+    // Acessa a store de usuário (estado global)
+    const userStore = useUserStore();
+
+    /**
+     * Faz logout usando a action da store
+     */
+    const fazerLogout = () => {
+      if (confirm('Deseja realmente sair?')) {
+        // Chama a action logout da store
+        // Ela já limpa tudo e redireciona
+        userStore.logout();
+      }
+    };
+
+    return {
+      userStore,
+      fazerLogout
+    };
+  }
+};
 </script>
 
-<style scoped>
-/* Transição suave entre páginas */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
+<style>
+/* Reset básico */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-/* Estilo dos logos */
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
+#app {
+  font-family: Arial, sans-serif;
+  background-color: #f0f2f5;
+  min-height: 100vh;
 }
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+
+/* Header/Menu */
+header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
-.logo.vue:hover {
-  filter: drop-shadow(0 0 2em #42b883aa);
+
+.menu-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+header h1 {
+  font-size: 24px;
+  white-space: nowrap;
+}
+
+/* Menu de navegação */
+.menu {
+  display: flex;
+  gap: 10px;
+  flex: 1;
+  justify-content: center;
+}
+
+.menu-item {
+  color: white;
+  text-decoration: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  transition: all 0.3s;
+  font-weight: 500;
+}
+
+.menu-item:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+.menu-item.router-link-active {
+  background: rgba(255,255,255,0.3);
+  font-weight: 600;
+}
+
+/* Info do usuário */
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.btn-logout {
+  background: rgba(255,255,255,0.2);
+  color: white;
+  border: 2px solid white;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.btn-logout:hover {
+  background: white;
+  color: #667eea;
+}
+
+/* Conteúdo principal */
+main {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 30px 20px;
+}
+
+main.with-header {
+  min-height: calc(100vh - 70px);
+}
+
+/* Estilos globais reutilizáveis */
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-weight: 500;
+}
+
+.btn-primary {
+  background-color: #667eea;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #5568d3;
+  transform: translateY(-2px);
+}
+
+.btn-success {
+  background-color: #51cf66;
+  color: white;
+}
+
+.btn-success:hover {
+  background-color: #40c057;
+}
+
+.btn-danger {
+  background-color: #ff6b6b;
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: #ee5a52;
+}
+
+.card {
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #333;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 15px;
+  transition: border-color 0.3s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.alert {
+  padding: 15px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+
+.alert-success {
+  background-color: #d3f9d8;
+  color: #2b8a3e;
+  border-left: 4px solid #51cf66;
+}
+
+.alert-danger {
+  background-color: #ffe3e3;
+  color: #c92a2a;
+  border-left: 4px solid #ff6b6b;
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+  .menu-container {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  header h1 {
+    font-size: 20px;
+  }
+  
+  .menu {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .menu-item {
+    padding: 8px 15px;
+    font-size: 14px;
+  }
+  
+  .user-info {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  main {
+    padding: 15px 10px;
+  }
 }
 </style>
-

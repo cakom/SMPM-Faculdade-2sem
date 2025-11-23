@@ -1,57 +1,54 @@
-// router/index.js - Configuração das rotas do Vue Router
-// Define todas as páginas e seus caminhos de acesso
+/* Configuração das Rotas o Router é como um "GPS" do sistema.
+ * Ele define quais páginas existem e seus caminhos.
+ * Exemplo: quando você acessa "/maquinas", 
+ * ele mostra a página Maquinas.vue
+ */
 
-import { createRouter, createWebHistory } from 'vue-router'
+// Importa as funções necessárias do Vue Router
+import { createRouter, createWebHistory } from 'vue-router';
 
-// Importa as páginas (views) da aplicação
-import Dashboard from '../views/Dashboard.vue'
-import Calendar from '../views/Calendar.vue'
-import MaintenanceList from '../views/MaintenanceList.vue'
-import MaintenanceDetails from '../views/MaintenanceDetails.vue'
+// Importa as páginas que vamos usar
+import Maquinas from '../views/Maquinas.vue';
+import Home from '../views/Home.vue';
+import Manutencoes from '../views/Manutencoes.vue';
 
-// Define as rotas da aplicação
+/**
+ * ROTAS - Lista de todas as páginas do sistema
+ * 
+ * Cada rota tem:
+ * - path: o caminho na URL (ex: /maquinas)
+ * - name: um nome amigável para a rota
+ * - component: qual página mostrar
+ */
 const routes = [
   {
-    path: '/', // Rota raiz
-    name: 'Dashboard',
-    component: Dashboard,
-    meta: { title: 'Dashboard - SMPM' }
+    path: '/',              // Página inicial (quando abre o sistema)
+    name: 'Home',           // Nome da rota
+    component: Home         // Mostra a página Home.vue
   },
   {
-    path: '/calendario', // Rota do calendário
-    name: 'Calendar',
-    component: Calendar,
-    meta: { title: 'Calendário - SMPM' }
+    path: '/maquinas',      // URL: localhost:8080/maquinas
+    name: 'Maquinas',
+    component: Maquinas     // Mostra a página Maquinas.vue
   },
   {
-    path: '/manutencoes', // Lista de manutenções
-    name: 'MaintenanceList',
-    component: MaintenanceList,
-    meta: { title: 'Manutenções - SMPM' }
-  },
-  {
-    path: '/manutencoes/:id', // Detalhes de uma manutenção específica
-    name: 'MaintenanceDetails',
-    component: MaintenanceDetails,
-    meta: { title: 'Detalhes da Manutenção - SMPM' }
-  },
-  {
-    // Rota 404 - página não encontrada
-    path: '/:pathMatch(.*)*',
-    redirect: '/'
+    path: '/manutencoes',   // URL: localhost:8080/manutencoes
+    name: 'Manutencoes',
+    component: Manutencoes  // Mostra a página Manutencoes.vue
   }
-]
+];
 
-// Cria o router com histórico de navegação
+/**
+ * CRIA O ROUTER
+ * 
+ * createRouter() cria o sistema de navegação
+ * history: createWebHistory() - URLs bonitas sem "#"
+ * routes: a lista de páginas que criamos acima
+ */
 const router = createRouter({
-  history: createWebHistory(), // Usa histórico HTML5 (sem #)
-  routes
-})
+  history: createWebHistory(),  // URLs ficam: /maquinas ao invés de /#/maquinas
+  routes                         // Usa as rotas definidas acima
+});
 
-// Middleware para atualizar título da página
-router.beforeEach((to, from, next) => {
-  document.title = to.meta.title || 'SMPM'
-  next()
-})
-
-export default router
+// Exporta o router para usar no main.js
+export default router;
