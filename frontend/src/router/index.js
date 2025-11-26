@@ -1,54 +1,89 @@
-/* Configuração das Rotas o Router é como um "GPS" do sistema.
- * Ele define quais páginas existem e seus caminhos.
- * Exemplo: quando você acessa "/maquinas", 
- * ele mostra a página Maquinas.vue
+/**
+ * router/index.js - Configuração das Rotas COM PROTEÇÃO
+ * 
+ * Agora com sistema de autenticação!
+ * Rotas protegidas só podem ser acessadas se estiver logado.
  */
 
-// Importa as funções necessárias do Vue Router
 import { createRouter, createWebHistory } from 'vue-router';
 
-// Importa as páginas que vamos usar
-import Maquinas from '../views/Maquinas.vue';
+// Importa as páginas
+import Login from '../views/Login.vue';
 import Home from '../views/Home.vue';
+import Maquinas from '../views/Maquinas.vue';
 import Manutencoes from '../views/Manutencoes.vue';
+import Relatorios from '../views/Relatorios.vue';
 
 /**
- * ROTAS - Lista de todas as páginas do sistema
- * 
- * Cada rota tem:
- * - path: o caminho na URL (ex: /maquinas)
- * - name: um nome amigável para a rota
- * - component: qual página mostrar
+ * ROTAS DO SISTEMA
  */
 const routes = [
   {
-    path: '/',              // Página inicial (quando abre o sistema)
-    name: 'Home',           // Nome da rota
-    component: Home         // Mostra a página Home.vue
+    path: '/login',
+    name: 'Login',
+    component: Login,
+    meta: { requiresAuth: false }  // Rota pública
   },
   {
-    path: '/maquinas',      // URL: localhost:8080/maquinas
+    path: '/',
+    name: 'Home',
+    component: Home,
+    meta: { requiresAuth: true }   // Rota protegida
+  },
+  {
+    path: '/maquinas',
     name: 'Maquinas',
-    component: Maquinas     // Mostra a página Maquinas.vue
+    component: Maquinas,
+    meta: { requiresAuth: true }
   },
   {
-    path: '/manutencoes',   // URL: localhost:8080/manutencoes
+    path: '/manutencoes',
     name: 'Manutencoes',
-    component: Manutencoes  // Mostra a página Manutencoes.vue
+    component: Manutencoes,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/relatorios',
+    name: 'Relatorios',
+    component: Relatorios,
+    meta: { requiresAuth: true }
   }
 ];
 
-/**
- * CRIA O ROUTER
- * 
- * createRouter() cria o sistema de navegação
- * history: createWebHistory() - URLs bonitas sem "#"
- * routes: a lista de páginas que criamos acima
- */
 const router = createRouter({
-  history: createWebHistory(),  // URLs ficam: /maquinas ao invés de /#/maquinas
-  routes                         // Usa as rotas definidas acima
+  history: createWebHistory(),
+  routes
 });
 
-// Exporta o router para usar no main.js
+/**
+ * GUARD DE NAVEGAÇÃO
+ * 
+ * Verifica antes de cada mudança de página:
+ * - Se a rota precisa de autenticação
+ * - Se o usuário está logado
+ * - Redireciona para login se necessário
+ */
+router.beforeEach((to, from, next) => {
+  // Verifica se a rota precisa de autenticação
+  const requerAutenticacao = to.meta.requiresAuth;
+  
+  // Verifica se tem token no localStorage
+  const token = localStorage.getItem('token');
+  
+  // Se a rota precisa de autenticação E não tem token
+  if (requerAutenticacao && !token) {
+    // Redireciona para login
+    next('/login');
+  } 
+  // Se está indo para login mas já está logado
+  else if (to.path === '/login' && token) {
+    // Redireciona para home
+    next('/');
+  } 
+  // Se está tudo OK, continua normalmente
+  else {
+    next();
+  }
+});
+
 export default router;

@@ -1,5 +1,13 @@
+<!--
+  Manutencoes.vue - Página de Manutenções Realizadas
+  
+  Aqui você registra as manutenções que foram feitas nas máquinas.
+-->
+
 <template>
   <div>
+    
+    <!-- Título -->
     <div class="card">
       <h2>🔧 Manutenções Realizadas</h2>
       <p>Registre e acompanhe o histórico de manutenções</p>

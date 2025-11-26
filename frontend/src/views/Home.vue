@@ -1,3 +1,10 @@
+<!--
+  Home.vue - Página Inicial do Sistema
+  
+  Esta é a primeira página que aparece quando abre o sistema.
+  Mostra um resumo geral e atalhos para outras páginas.
+-->
+
 <template>
   <div>
     

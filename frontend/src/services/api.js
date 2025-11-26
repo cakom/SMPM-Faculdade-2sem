@@ -1,101 +1,269 @@
 /**
- * services/api.js - Instância configurada do Axios
+ * api.js - Serviço de comunicação com o Backend
  * 
- * Este arquivo cria e exporta uma instância do Axios já configurada
- * com a URL base da API e interceptadores para adicionar token.
+ * Este arquivo centraliza todas as chamadas para a API.
+ * Facilita a manutenção e organização do código.
  */
 
-import axios from 'axios';
-
-// URL base da API (backend)
-// Em desenvolvimento: http://localhost:3000/api
-// Em produção: substitua pela URL do seu backend hospedado
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+// URL base da API (onde o backend está rodando)
+const API_URL = 'http://localhost:3000/api';
 
 /**
- * Cria instância do Axios com configurações personalizadas
+ * Pega o token JWT do localStorage
+ * Usado para autenticar requisições
  */
-const api = axios.create({
-    baseURL: API_URL,                // URL base para todas as requisições
-    timeout: 10000,                  // Timeout de 10 segundos
-    headers: {
-        'Content-Type': 'application/json'
-    }
-});
+const getToken = () => {
+  return localStorage.getItem('token');
+};
 
 /**
- * INTERCEPTADOR DE REQUISIÇÃO
- * 
- * Adiciona o token JWT automaticamente em todas as requisições
- * (exceto login e registro que não precisam de token)
+ * Cria headers padrão para requisições
+ * Inclui o token de autenticação se existir
  */
-api.interceptors.request.use(
-    (config) => {
-        // Pega o token do localStorage
-        const token = localStorage.getItem('token');
-        
-        // Se existir token, adiciona no header Authorization
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
-        
-        return config;
-    },
-    (error) => {
-        // Erro antes da requisição ser enviada
-        console.error('Erro na requisição:', error);
-        return Promise.reject(error);
-    }
-);
+const getHeaders = () => {
+  const headers = {
+    'Content-Type': 'application/json'
+  };
+  
+  const token = getToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  
+  return headers;
+};
+
+// ===== SERVIÇO DE AUTENTICAÇÃO =====
 
 /**
- * INTERCEPTADOR DE RESPOSTA
- * 
- * Trata erros globais, como token expirado
+ * Registra um novo usuário
+ * @param {Object} dados - { nome, email, senha, role }
  */
-api.interceptors.response.use(
-    (response) => {
-        // Requisição bem-sucedida, retorna a resposta
-        return response;
-    },
-    (error) => {
-        // Trata erros de resposta
-        
-        if (error.response) {
-            // Erro com resposta do servidor
-            
-            // Se token expirado ou inválido (401)
-            if (error.response.status === 401) {
-                // Remove token inválido
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                
-                // Redireciona para login (se não estiver lá)
-                if (window.location.pathname !== '/login') {
-                    window.location.href = '/login';
-                }
-            }
-            
-            // Se acesso negado (403)
-            if (error.response.status === 403) {
-                console.error('Acesso negado: você não tem permissão');
-            }
-            
-            // Erro interno do servidor (500)
-            if (error.response.status === 500) {
-                console.error('Erro interno do servidor');
-            }
-        } else if (error.request) {
-            // Requisição foi feita mas não houve resposta
-            console.error('Servidor não respondeu:', error.request);
-        } else {
-            // Erro ao configurar a requisição
-            console.error('Erro ao configurar requisição:', error.message);
-        }
-        
-        return Promise.reject(error);
+export const registrar = async (dados) => {
+  try {
+    const response = await fetch(`${API_URL}/registro`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dados)
+    });
+    
+    const resultado = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(resultado.erro || 'Erro ao registrar');
     }
-);
+    
+    return resultado;
+  } catch (erro) {
+    console.error('Erro no registro:', erro);
+    throw erro;
+  }
+};
 
-// Exporta a instância configurada
-export default api;
+/**
+ * Faz login do usuário
+ * @param {string} email 
+ * @param {string} senha 
+ */
+export const login = async (email, senha) => {
+  try {
+    const response = await fetch(`${API_URL}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, senha })
+    });
+    
+    const resultado = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(resultado.erro || 'Erro ao fazer login');
+    }
+    
+    // Salva token e dados do usuário no localStorage
+    localStorage.setItem('token', resultado.token);
+    localStorage.setItem('user', JSON.stringify(resultado.usuario));
+    
+    return resultado;
+  } catch (erro) {
+    console.error('Erro no login:', erro);
+    throw erro;
+  }
+};
+
+/**
+ * Faz logout do usuário
+ */
+export const logout = () => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+};
+
+// ===== SERVIÇO DE MÁQUINAS =====
+
+/**
+ * Busca todas as máquinas
+ */
+export const listarMaquinas = async () => {
+  try {
+    const response = await fetch(`${API_URL}/maquinas`, {
+      headers: getHeaders()
+    });
+    
+    const resultado = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(resultado.erro || 'Erro ao buscar máquinas');
+    }
+    
+    return resultado;
+  } catch (erro) {
+    console.error('Erro ao listar máquinas:', erro);
+    throw erro;
+  }
+};
+
+/**
+ * Cria uma nova máquina
+ * @param {Object} dados - { nome, tipo, local, proximaManutencao }
+ */
+export const criarMaquina = async (dados) => {
+  try {
+    const response = await fetch(`${API_URL}/maquinas`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(dados)
+    });
+    
+    const resultado = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(resultado.erro || 'Erro ao criar máquina');
+    }
+    
+    return resultado;
+  } catch (erro) {
+    console.error('Erro ao criar máquina:', erro);
+    throw erro;
+  }
+};
+
+/**
+ * Remove uma máquina
+ * @param {string} id - ID da máquina
+ */
+export const removerMaquina = async (id) => {
+  try {
+    const response = await fetch(`${API_URL}/maquinas/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    
+    const resultado = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(resultado.erro || 'Erro ao remover máquina');
+    }
+    
+    return resultado;
+  } catch (erro) {
+    console.error('Erro ao remover máquina:', erro);
+    throw erro;
+  }
+};
+
+// ===== SERVIÇO DE MANUTENÇÕES =====
+
+/**
+ * Busca todas as manutenções
+ */
+export const listarManutencoes = async () => {
+  try {
+    const response = await fetch(`${API_URL}/manutencoes`, {
+      headers: getHeaders()
+    });
+    
+    const resultado = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(resultado.erro || 'Erro ao buscar manutenções');
+    }
+    
+    return resultado;
+  } catch (erro) {
+    console.error('Erro ao listar manutenções:', erro);
+    throw erro;
+  }
+};
+
+/**
+ * Cria uma nova manutenção
+ * @param {Object} dados - { maquina, data, tipo, descricao, tecnico }
+ */
+export const criarManutencao = async (dados) => {
+  try {
+    const response = await fetch(`${API_URL}/manutencoes`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(dados)
+    });
+    
+    const resultado = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(resultado.erro || 'Erro ao criar manutenção');
+    }
+    
+    return resultado;
+  } catch (erro) {
+    console.error('Erro ao criar manutenção:', erro);
+    throw erro;
+  }
+};
+
+/**
+ * Remove uma manutenção
+ * @param {string} id - ID da manutenção
+ */
+export const removerManutencao = async (id) => {
+  try {
+    const response = await fetch(`${API_URL}/manutencoes/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
+    
+    const resultado = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(resultado.erro || 'Erro ao remover manutenção');
+    }
+    
+    return resultado;
+  } catch (erro) {
+    console.error('Erro ao remover manutenção:', erro);
+    throw erro;
+  }
+};
+
+// ===== SERVIÇO DE RELATÓRIOS =====
+
+/**
+ * Busca dados resumidos para relatórios
+ */
+export const buscarResumo = async () => {
+  try {
+    const response = await fetch(`${API_URL}/relatorios/resumo`, {
+      headers: getHeaders()
+    });
+    
+    const resultado = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(resultado.erro || 'Erro ao buscar resumo');
+    }
+    
+    return resultado;
+  } catch (erro) {
+    console.error('Erro ao buscar resumo:', erro);
+    throw erro;
+  }
+};

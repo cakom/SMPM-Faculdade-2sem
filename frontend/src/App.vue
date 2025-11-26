@@ -1,12 +1,12 @@
 <!--
-  App.vue - COM PINIA STORE
+  App.vue - Componente Principal COM MENU
 -->
 
 <template>
   <div id="app">
     
     <!-- Menu só aparece se estiver logado -->
-    <header v-if="userStore.isAuthenticated && $route.path !== '/login'">
+    <header v-if="estaLogado">
       <div class="menu-container">
         <h1>🔧 Sistema de Manutenção</h1>
         
@@ -18,14 +18,14 @@
         </nav>
         
         <div class="user-info">
-          <span>👤 {{ userStore.userName }}</span>
+          <span>👤 {{ nomeUsuario }}</span>
           <button @click="fazerLogout" class="btn-logout">🚪 Sair</button>
         </div>
       </div>
     </header>
 
     <!-- Conteúdo das páginas -->
-    <main :class="{ 'with-header': userStore.isAuthenticated }">
+    <main :class="{ 'with-header': estaLogado }">
       <router-view></router-view>
     </main>
 
@@ -33,29 +33,58 @@
 </template>
 
 <script>
-import { useUserStore } from './stores/userStore'; // Importa a store
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import { logout } from './services/api.js';
 
 export default {
   name: 'App',
   
   setup() {
-    // ===== PINIA STORE =====
-    // Acessa a store de usuário (estado global)
-    const userStore = useUserStore();
+    const router = useRouter();
+    const route = useRoute();
+    
+    const nomeUsuario = ref('');
+
+    // Verifica se está logado baseado no token
+    const estaLogado = computed(() => {
+      return !!localStorage.getItem('token') && route.path !== '/login';
+    });
 
     /**
-     * Faz logout usando a action da store
+     * Atualiza informações do usuário
      */
-    const fazerLogout = () => {
-      if (confirm('Deseja realmente sair?')) {
-        // Chama a action logout da store
-        // Ela já limpa tudo e redireciona
-        userStore.logout();
+    const atualizarUsuario = () => {
+      const user = localStorage.getItem('user');
+      if (user) {
+        const userData = JSON.parse(user);
+        nomeUsuario.value = userData.nome;
       }
     };
 
+    /**
+     * Faz logout
+     */
+    const fazerLogout = () => {
+      if (confirm('Deseja realmente sair?')) {
+        logout(); // Limpa localStorage
+        router.push('/login');
+      }
+    };
+
+    // Atualiza usuário quando monta o componente
+    onMounted(() => {
+      atualizarUsuario();
+    });
+
+    // Atualiza usuário quando a rota muda
+    watch(route, () => {
+      atualizarUsuario();
+    });
+
     return {
-      userStore,
+      estaLogado,
+      nomeUsuario,
       fazerLogout
     };
   }
