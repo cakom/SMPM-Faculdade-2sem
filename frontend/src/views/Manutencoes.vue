@@ -1,7 +1,5 @@
 <!--
-  Manutencoes.vue - Página de Manutenções Realizadas
-  
-  Aqui você registra as manutenções que foram feitas nas máquinas.
+  Manutencoes.vue - USANDO PINIA STORE
 -->
 
 <template>
@@ -13,12 +11,30 @@
       <p>Registre e acompanhe o histórico de manutenções</p>
     </div>
 
-    <!-- Botão para adicionar manutenção -->
+    <!-- Estatísticas rápidas -->
+    <div class="stats-container">
+      <div class="stat-box">
+        <span class="stat-number">{{ maintenanceStore.totalMaintenances }}</span>
+        <span class="stat-label">Total de Manutenções</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-number">{{ maintenanceStore.recentMaintenances.length }}</span>
+        <span class="stat-label">Últimos 30 dias</span>
+      </div>
+    </div>
+
+    <!-- Botão para adicionar -->
     <div style="margin-bottom: 20px;">
       <button @click="mostrarFormulario = !mostrarFormulario" class="btn btn-success">
         ➕ Registrar Manutenção
       </button>
     </div>
+
+    <!-- Mensagens -->
+    <div v-if="maintenanceStore.error" class="alert alert-danger">
+      {{ maintenanceStore.error }}
+    </div>
+    <div v-if="sucesso" class="alert alert-success">{{ sucesso }}</div>
 
     <!-- Formulário -->
     <div v-if="mostrarFormulario" class="card">
@@ -69,24 +85,41 @@
         >
       </div>
 
-      <button @click="adicionarManutencao" class="btn btn-success">
-        ✅ Salvar
+      <button 
+        @click="adicionarManutencao" 
+        class="btn btn-success"
+        :disabled="maintenanceStore.loading"
+      >
+        {{ maintenanceStore.loading ? '⏳ Salvando...' : '✅ Salvar' }}
       </button>
-      <button @click="mostrarFormulario = false" class="btn btn-danger" style="margin-left: 10px;">
+      <button 
+        @click="cancelarFormulario" 
+        class="btn btn-danger" 
+        style="margin-left: 10px;"
+      >
         ❌ Cancelar
       </button>
     </div>
 
-    <!-- Mensagem se não tiver manutenções -->
-    <div v-if="manutencoes.length === 0" class="card">
+    <!-- Loading -->
+    <div v-if="maintenanceStore.loading && !mostrarFormulario" class="card">
+      <p style="text-align: center;">⏳ Carregando manutenções...</p>
+    </div>
+
+    <!-- Lista vazia -->
+    <div v-else-if="maintenanceStore.maintenances.length === 0" class="card">
       <p style="text-align: center; color: #999;">
         📭 Nenhuma manutenção registrada ainda.
       </p>
     </div>
 
-    <!-- Lista de manutenções -->
+    <!-- Lista de manutenções (ordenadas por data) -->
     <div v-else>
-      <div v-for="manutencao in manutencoes" :key="manutencao.id" class="card manutencao-card">
+      <div 
+        v-for="manutencao in maintenanceStore.maintenancesByDate" 
+        :key="manutencao._id" 
+        class="card manutencao-card"
+      >
         
         <!-- Cabeçalho -->
         <div style="display: flex; justify-content: space-between; align-items: start;">
@@ -99,7 +132,11 @@
               </span>
             </p>
           </div>
-          <button @click="removerManutencao(manutencao.id)" class="btn btn-danger">
+          <button 
+            @click="removerManutencao(manutencao._id)" 
+            class="btn btn-danger"
+            :disabled="maintenanceStore.loading"
+          >
             🗑️
           </button>
         </div>
@@ -107,10 +144,25 @@
         <!-- Descrição -->
         <div style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
           <strong>Descrição:</strong>
-          <p style="margin-top: 5px;">{{ manutencao.descricao }}</p>
+          <p style="margin-top: 5px;">{{ manutencao.descricao || 'Sem descrição' }}</p>
           <small style="color: #666;">👨‍🔧 Técnico: {{ manutencao.tecnico }}</small>
         </div>
 
+      </div>
+    </div>
+
+    <!-- Resumo por tipo -->
+    <div v-if="maintenanceStore.maintenances.length > 0" class="card">
+      <h3>📊 Resumo por Tipo</h3>
+      <div class="tipo-resumo">
+        <div 
+          v-for="(count, tipo) in maintenanceStore.countByType" 
+          :key="tipo"
+          class="tipo-item"
+        >
+          <span :class="'badge badge-' + tipo.toLowerCase()">{{ tipo }}</span>
+          <span class="tipo-count">{{ count }}</span>
+        </div>
       </div>
     </div>
 
@@ -118,19 +170,21 @@
 </template>
 
 <script>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
+import { useMaintenanceStore } from '../stores/maintenanceStore'; // Importa a store
 
 export default {
   name: 'Manutencoes',
   
   setup() {
-    // Controla visibilidade do formulário
+    // ===== PINIA STORE =====
+    // Acessa a store de manutenções (estado global)
+    const maintenanceStore = useMaintenanceStore();
+    
+    // ===== ESTADO LOCAL =====
     const mostrarFormulario = ref(false);
+    const sucesso = ref('');
     
-    // Lista de manutenções
-    const manutencoes = ref([]);
-    
-    // Dados da nova manutenção
     const novaManutencao = ref({
       maquina: '',
       data: '',
@@ -139,30 +193,67 @@ export default {
       tecnico: ''
     });
 
+    // ===== MÉTODOS =====
+
     /**
-     * Adiciona uma nova manutenção
+     * Adiciona nova manutenção usando a store
      */
-    const adicionarManutencao = () => {
-      // Valida campos obrigatórios
+    const adicionarManutencao = async () => {
+      // Validação básica
       if (!novaManutencao.value.maquina || !novaManutencao.value.data) {
-        alert('⚠️ Preencha pelo menos a máquina e a data!');
+        maintenanceStore.error = '⚠️ Preencha pelo menos a máquina e a data!';
         return;
       }
 
-      // Cria objeto da manutenção
-      const manutencao = {
-        id: Date.now(),
-        maquina: novaManutencao.value.maquina,
-        data: novaManutencao.value.data,
-        tipo: novaManutencao.value.tipo,
-        descricao: novaManutencao.value.descricao,
-        tecnico: novaManutencao.value.tecnico
-      };
+      try {
+        // Chama action da store
+        await maintenanceStore.addMaintenance(novaManutencao.value);
+        
+        // Sucesso!
+        sucesso.value = '✅ Manutenção registrada com sucesso!';
+        setTimeout(() => sucesso.value = '', 5000);
+        
+        // Limpa formulário
+        novaManutencao.value = {
+          maquina: '',
+          data: '',
+          tipo: '',
+          descricao: '',
+          tecnico: ''
+        };
+        
+        mostrarFormulario.value = false;
+        
+      } catch (error) {
+        // Erro já está em maintenanceStore.error
+        console.error('Erro ao adicionar:', error);
+      }
+    };
 
-      // Adiciona na lista (mais recente primeiro)
-      manutencoes.value.unshift(manutencao);
+    /**
+     * Remove manutenção usando a store
+     */
+    const removerManutencao = async (id) => {
+      if (!confirm('Remover esta manutenção?')) return;
+      
+      try {
+        // Chama action da store
+        await maintenanceStore.deleteMaintenance(id);
+        
+        sucesso.value = '🗑️ Manutenção removida!';
+        setTimeout(() => sucesso.value = '', 5000);
+        
+      } catch (error) {
+        console.error('Erro ao remover:', error);
+      }
+    };
 
-      // Limpa formulário
+    /**
+     * Cancela formulário e limpa erros
+     */
+    const cancelarFormulario = () => {
+      mostrarFormulario.value = false;
+      maintenanceStore.clearError();
       novaManutencao.value = {
         maquina: '',
         data: '',
@@ -170,21 +261,6 @@ export default {
         descricao: '',
         tecnico: ''
       };
-
-      // Fecha formulário
-      mostrarFormulario.value = false;
-
-      alert('✅ Manutenção registrada com sucesso!');
-    };
-
-    /**
-     * Remove uma manutenção
-     */
-    const removerManutencao = (id) => {
-      if (confirm('Remover esta manutenção?')) {
-        manutencoes.value = manutencoes.value.filter(m => m.id !== id);
-        alert('🗑️ Manutenção removida!');
-      }
     };
 
     /**
@@ -192,16 +268,30 @@ export default {
      */
     const formatarData = (data) => {
       if (!data) return '';
-      const dataObj = new Date(data + 'T00:00:00');
+      const dataObj = new Date(data);
       return dataObj.toLocaleDateString('pt-BR');
     };
 
+    // ===== LIFECYCLE =====
+    
+    /**
+     * Quando monta, carrega as manutenções se a store estiver vazia
+     */
+    onMounted(async () => {
+      if (maintenanceStore.maintenances.length === 0) {
+        await maintenanceStore.fetchMaintenances();
+      }
+    });
+
+    // ===== RETORNO =====
     return {
+      maintenanceStore,    // Expõe a store para o template
       mostrarFormulario,
-      manutencoes,
       novaManutencao,
+      sucesso,
       adicionarManutencao,
       removerManutencao,
+      cancelarFormulario,
       formatarData
     };
   }
@@ -209,8 +299,46 @@ export default {
 </script>
 
 <style scoped>
+/* Estatísticas rápidas */
+.stats-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.stat-box {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  text-align: center;
+  border-left: 4px solid #51cf66;
+}
+
+.stat-number {
+  display: block;
+  font-size: 32px;
+  font-weight: 700;
+  color: #51cf66;
+  margin-bottom: 5px;
+}
+
+.stat-label {
+  display: block;
+  color: #666;
+  font-size: 14px;
+}
+
+/* Card de manutenção */
 .manutencao-card {
   border-left: 4px solid #51cf66;
+  transition: transform 0.2s;
+}
+
+.manutencao-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
 /* Badges coloridos para tipo de manutenção */
@@ -234,5 +362,38 @@ export default {
 .badge-preditiva {
   background: #d0ebff;
   color: #1971c2;
+}
+
+/* Resumo por tipo */
+.tipo-resumo {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  margin-top: 15px;
+}
+
+.tipo-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.tipo-count {
+  font-size: 20px;
+  font-weight: 700;
+  color: #667eea;
+}
+
+h2 {
+  color: #333;
+  margin-bottom: 10px;
+}
+
+h3 {
+  color: #51cf66;
+  margin-bottom: 5px;
 }
 </style>

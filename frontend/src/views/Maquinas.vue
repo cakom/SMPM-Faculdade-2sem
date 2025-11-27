@@ -1,5 +1,5 @@
 <!--
-  Maquinas.vue - CONECTADO COM API
+  Maquinas.vue - USANDO PINIA STORE
 -->
 
 <template>
@@ -17,7 +17,9 @@
     </div>
 
     <!-- Mensagens -->
-    <div v-if="erro" class="alert alert-danger">{{ erro }}</div>
+    <div v-if="machineStore.error" class="alert alert-danger">
+      {{ machineStore.error }}
+    </div>
     <div v-if="sucesso" class="alert alert-success">{{ sucesso }}</div>
 
     <!-- Formulário -->
@@ -62,42 +64,60 @@
         >
       </div>
 
-      <button @click="adicionarMaquina" class="btn btn-success" :disabled="carregando">
-        {{ carregando ? '⏳ Salvando...' : '✅ Salvar Máquina' }}
+      <button 
+        @click="adicionarMaquina" 
+        class="btn btn-success" 
+        :disabled="machineStore.loading"
+      >
+        {{ machineStore.loading ? '⏳ Salvando...' : '✅ Salvar Máquina' }}
       </button>
-      <button @click="mostrarFormulario = false" class="btn btn-danger" style="margin-left: 10px;">
+      <button 
+        @click="cancelarFormulario" 
+        class="btn btn-danger" 
+        style="margin-left: 10px;"
+      >
         ❌ Cancelar
       </button>
     </div>
 
     <!-- Loading -->
-    <div v-if="carregando && !mostrarFormulario" class="card">
+    <div v-if="machineStore.loading && !mostrarFormulario" class="card">
       <p style="text-align: center;">⏳ Carregando máquinas...</p>
     </div>
 
     <!-- Lista vazia -->
-    <div v-else-if="maquinas.length === 0" class="card">
+    <div v-else-if="machineStore.machines.length === 0" class="card">
       <p style="text-align: center; color: #999;">
         📭 Nenhuma máquina cadastrada ainda. Clique em "Adicionar Máquina" para começar!
       </p>
     </div>
 
-    <!-- Lista de máquinas -->
+    <!-- Lista de máquinas (ordenadas por urgência) -->
     <div v-else>
-      <div v-for="maquina in maquinas" :key="maquina._id" class="card maquina-card">
+      <div 
+        v-for="maquina in machineStore.machinesByUrgency" 
+        :key="maquina._id" 
+        class="card maquina-card"
+      >
         
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <div>
             <h3>🔧 {{ maquina.nome }}</h3>
             <p style="color: #666;">{{ maquina.tipo }} - {{ maquina.local }}</p>
           </div>
-          <button @click="removerMaquina(maquina._id)" class="btn btn-danger">
+          <button 
+            @click="removerMaquina(maquina._id)" 
+            class="btn btn-danger"
+            :disabled="machineStore.loading"
+          >
             🗑️ Remover
           </button>
         </div>
 
-        <div style="margin-top: 15px; padding: 15px; border-radius: 8px;" 
-             :style="{ backgroundColor: getCorStatus(maquina.proximaManutencao) }">
+        <div 
+          style="margin-top: 15px; padding: 15px; border-radius: 8px;" 
+          :style="{ backgroundColor: getCorStatus(maquina.proximaManutencao) }"
+        >
           <strong>Próxima Manutenção:</strong> 
           {{ formatarData(maquina.proximaManutencao) }}
           <br>
@@ -112,16 +132,19 @@
 
 <script>
 import { ref, onMounted } from 'vue';
-import { listarMaquinas, criarMaquina, removerMaquina as removerMaquinaAPI } from '../services/api.js';
+import { useMachineStore } from '../stores/machineStore'; // Importa a store
 
 export default {
   name: 'Maquinas',
   
   setup() {
+    // ===== PINIA STORE =====
+    // Acessa a store de máquinas (estado global compartilhado)
+    const machineStore = useMachineStore();
+    
+    // ===== ESTADO LOCAL =====
+    // Dados específicos deste componente
     const mostrarFormulario = ref(false);
-    const maquinas = ref([]);
-    const carregando = ref(false);
-    const erro = ref('');
     const sucesso = ref('');
     
     const novaMaquina = ref({
@@ -131,39 +154,25 @@ export default {
       proximaManutencao: ''
     });
 
-    /**
-     * Carrega máquinas do banco de dados
-     */
-    const carregarMaquinas = async () => {
-      carregando.value = true;
-      erro.value = '';
-      
-      try {
-        maquinas.value = await listarMaquinas();
-      } catch (error) {
-        erro.value = 'Erro ao carregar máquinas: ' + error.message;
-      } finally {
-        carregando.value = false;
-      }
-    };
+    // ===== MÉTODOS =====
 
     /**
-     * Adiciona nova máquina
+     * Adiciona nova máquina usando a store
      */
     const adicionarMaquina = async () => {
+      // Validação
       if (!novaMaquina.value.nome || !novaMaquina.value.tipo) {
-        erro.value = '⚠️ Preencha pelo menos o nome e tipo da máquina!';
+        machineStore.error = '⚠️ Preencha pelo menos o nome e tipo da máquina!';
         return;
       }
 
-      carregando.value = true;
-      erro.value = '';
-      
       try {
-        await criarMaquina(novaMaquina.value);
+        // Chama action da store
+        await machineStore.addMachine(novaMaquina.value);
         
+        // Sucesso!
         sucesso.value = '✅ Máquina adicionada com sucesso!';
-        setTimeout(() => sucesso.value = '', 3000);
+        setTimeout(() => sucesso.value = '', 5000);
         
         // Limpa formulário
         novaMaquina.value = {
@@ -175,45 +184,56 @@ export default {
         
         mostrarFormulario.value = false;
         
-        // Recarrega lista
-        await carregarMaquinas();
-        
       } catch (error) {
-        erro.value = 'Erro ao adicionar máquina: ' + error.message;
-      } finally {
-        carregando.value = false;
+        // Erro já está armazenado em machineStore.error
+        console.error('Erro ao adicionar:', error);
       }
     };
 
     /**
-     * Remove máquina
+     * Remove máquina usando a store
      */
     const removerMaquina = async (id) => {
       if (!confirm('Tem certeza que deseja remover esta máquina?')) return;
       
-      carregando.value = true;
-      
       try {
-        await removerMaquinaAPI(id);
-        sucesso.value = '🗑️ Máquina removida!';
-        setTimeout(() => sucesso.value = '', 3000);
+        // Chama action da store
+        await machineStore.deleteMachine(id);
         
-        // Recarrega lista
-        await carregarMaquinas();
+        sucesso.value = '🗑️ Máquina removida!';
+        setTimeout(() => sucesso.value = '', 5000);
         
       } catch (error) {
-        erro.value = 'Erro ao remover máquina: ' + error.message;
-      } finally {
-        carregando.value = false;
+        console.error('Erro ao remover:', error);
       }
     };
 
+    /**
+     * Cancela formulário e limpa erros
+     */
+    const cancelarFormulario = () => {
+      mostrarFormulario.value = false;
+      machineStore.clearError();
+      novaMaquina.value = {
+        nome: '',
+        tipo: '',
+        local: '',
+        proximaManutencao: ''
+      };
+    };
+
+    /**
+     * Formata data para exibição
+     */
     const formatarData = (data) => {
       if (!data) return 'Não definida';
       const dataObj = new Date(data);
       return dataObj.toLocaleDateString('pt-BR');
     };
 
+    /**
+     * Calcula dias restantes até manutenção
+     */
     const getDiasRestantes = (data) => {
       if (!data) return '';
       
@@ -232,6 +252,9 @@ export default {
       return `✅ Faltam ${dias} dias`;
     };
 
+    /**
+     * Define cor baseada na urgência
+     */
     const getCorStatus = (data) => {
       if (!data) return '#f0f0f0';
       
@@ -243,25 +266,32 @@ export default {
       
       const dias = Math.ceil((dataManutencao - hoje) / (1000 * 60 * 60 * 24));
 
-      if (dias < 0) return '#ffe3e3';
-      if (dias <= 7) return '#fff3cd';
-      return '#d3f9d8';
+      if (dias < 0) return '#ffe3e3';  // Vermelho - atrasada
+      if (dias <= 7) return '#fff3cd';  // Amarelo - urgente
+      return '#d3f9d8';                 // Verde - ok
     };
 
-    // Carrega máquinas quando monta o componente
-    onMounted(() => {
-      carregarMaquinas();
+    // ===== LIFECYCLE =====
+    
+    /**
+     * Quando o componente é montado, carrega as máquinas da store
+     */
+    onMounted(async () => {
+      // Se a store estiver vazia, busca do backend
+      if (machineStore.machines.length === 0) {
+        await machineStore.fetchMachines();
+      }
     });
 
+    // ===== RETORNO =====
     return {
+      machineStore,        // Expõe a store para o template
       mostrarFormulario,
-      maquinas,
       novaMaquina,
-      carregando,
-      erro,
       sucesso,
       adicionarMaquina,
       removerMaquina,
+      cancelarFormulario,
       formatarData,
       getDiasRestantes,
       getCorStatus

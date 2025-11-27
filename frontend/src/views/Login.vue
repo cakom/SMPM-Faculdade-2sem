@@ -1,24 +1,18 @@
 <!--
-  Login.vue - Página de Login e Registro
-  
-  Permite que o usuário:
-  - Faça login no sistema
-  - Registre uma nova conta
+  Login.vue - USANDO PINIA STORE
 -->
 
 <template>
   <div class="login-container">
     
-    <!-- Card de Login/Registro -->
     <div class="login-card">
       
-      <!-- Logo/Título -->
       <div class="login-header">
         <h1>🔧 Sistema de Manutenção</h1>
         <p>Faça login para continuar</p>
       </div>
 
-      <!-- Abas: Login / Registro -->
+      <!-- Abas -->
       <div class="tabs">
         <button 
           @click="modo = 'login'" 
@@ -36,9 +30,9 @@
         </button>
       </div>
 
-      <!-- Mensagem de erro -->
-      <div v-if="erro" class="alert alert-danger">
-        {{ erro }}
+      <!-- Mensagem de erro da store -->
+      <div v-if="userStore.error" class="alert alert-danger">
+        {{ userStore.error }}
       </div>
 
       <!-- Mensagem de sucesso -->
@@ -69,8 +63,12 @@
           >
         </div>
 
-        <button type="submit" class="btn btn-primary btn-full" :disabled="carregando">
-          {{ carregando ? 'Entrando...' : '🚀 Entrar' }}
+        <button 
+          type="submit" 
+          class="btn btn-primary btn-full" 
+          :disabled="userStore.loading"
+        >
+          {{ userStore.loading ? 'Entrando...' : '🚀 Entrar' }}
         </button>
 
       </form>
@@ -118,8 +116,12 @@
           </select>
         </div>
 
-        <button type="submit" class="btn btn-success btn-full" :disabled="carregando">
-          {{ carregando ? 'Registrando...' : '✅ Criar Conta' }}
+        <button 
+          type="submit" 
+          class="btn btn-success btn-full" 
+          :disabled="userStore.loading"
+        >
+          {{ userStore.loading ? 'Registrando...' : '✅ Criar Conta' }}
         </button>
 
       </form>
@@ -132,7 +134,7 @@
 <script>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { login, registrar } from '../services/api.js';
+import { useUserStore } from '../stores/userStore'; // Importa a store
 
 export default {
   name: 'Login',
@@ -140,23 +142,18 @@ export default {
   setup() {
     const router = useRouter();
     
-    // Modo: 'login' ou 'registro'
-    const modo = ref('login');
+    // ===== PINIA STORE =====
+    const userStore = useUserStore();
     
-    // Estado de carregamento
-    const carregando = ref(false);
-    
-    // Mensagens
-    const erro = ref('');
+    // ===== ESTADO LOCAL =====
+    const modo = ref('login'); // 'login' ou 'registro'
     const sucesso = ref('');
     
-    // Formulário de login
     const loginForm = ref({
       email: '',
       senha: ''
     });
     
-    // Formulário de registro
     const registroForm = ref({
       nome: '',
       email: '',
@@ -164,23 +161,24 @@ export default {
       role: 'operador'
     });
 
+    // ===== MÉTODOS =====
+
     /**
-     * Função de login
+     * Faz login usando a store
      */
     const fazerLogin = async () => {
-      // Limpa mensagens anteriores
-      erro.value = '';
+      // Limpa mensagens
       sucesso.value = '';
-      carregando.value = true;
+      userStore.clearError();
 
       try {
-        // Chama a API de login
-        const resultado = await login(
+        // Chama action da store
+        await userStore.login(
           loginForm.value.email, 
           loginForm.value.senha
         );
 
-        // Sucesso! Redireciona para Home
+        // Sucesso! Redireciona
         sucesso.value = 'Login realizado com sucesso!';
         
         setTimeout(() => {
@@ -188,30 +186,27 @@ export default {
         }, 1000);
 
       } catch (error) {
-        // Mostra erro
-        erro.value = error.message || 'Erro ao fazer login';
-      } finally {
-        carregando.value = false;
+        // Erro já está em userStore.error
+        console.error('Erro no login:', error);
       }
     };
 
     /**
-     * Função de registro
+     * Faz registro usando a store
      */
     const fazerRegistro = async () => {
-      erro.value = '';
       sucesso.value = '';
-      carregando.value = true;
+      userStore.clearError();
 
       try {
-        // Chama a API de registro
-        await registrar(registroForm.value);
+        // Chama action da store
+        await userStore.register(registroForm.value);
 
         // Sucesso! Muda para modo login
         sucesso.value = 'Conta criada! Faça login para continuar.';
         modo.value = 'login';
         
-        // Preenche o email no formulário de login
+        // Preenche email no formulário de login
         loginForm.value.email = registroForm.value.email;
         
         // Limpa formulário de registro
@@ -223,16 +218,13 @@ export default {
         };
 
       } catch (error) {
-        erro.value = error.message || 'Erro ao criar conta';
-      } finally {
-        carregando.value = false;
+        console.error('Erro no registro:', error);
       }
     };
 
     return {
+      userStore,
       modo,
-      carregando,
-      erro,
       sucesso,
       loginForm,
       registroForm,
@@ -244,7 +236,6 @@ export default {
 </script>
 
 <style scoped>
-/* Container principal - centraliza o card */
 .login-container {
   min-height: 100vh;
   display: flex;
@@ -254,7 +245,6 @@ export default {
   padding: 20px;
 }
 
-/* Card de login */
 .login-card {
   background: white;
   padding: 40px;
@@ -264,7 +254,6 @@ export default {
   max-width: 450px;
 }
 
-/* Cabeçalho */
 .login-header {
   text-align: center;
   margin-bottom: 30px;
@@ -280,7 +269,6 @@ export default {
   color: #666;
 }
 
-/* Abas (Login / Registro) */
 .tabs {
   display: flex;
   gap: 10px;
@@ -311,7 +299,6 @@ export default {
   color: white;
 }
 
-/* Botão full width */
 .btn-full {
   width: 100%;
   padding: 14px;
@@ -320,13 +307,11 @@ export default {
   margin-top: 10px;
 }
 
-/* Estado desabilitado */
 button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-/* Responsivo */
 @media (max-width: 500px) {
   .login-card {
     padding: 25px;

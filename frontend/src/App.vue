@@ -1,12 +1,12 @@
 <!--
-  App.vue - Componente Principal COM MENU
+  App.vue - COM PINIA STORE
 -->
 
 <template>
   <div id="app">
     
     <!-- Menu só aparece se estiver logado -->
-    <header v-if="estaLogado">
+    <header v-if="userStore.isAuthenticated && $route.path !== '/login'">
       <div class="menu-container">
         <h1>🔧 Sistema de Manutenção</h1>
         
@@ -18,14 +18,14 @@
         </nav>
         
         <div class="user-info">
-          <span>👤 {{ nomeUsuario }}</span>
+          <span>👤 {{ userStore.userName }}</span>
           <button @click="fazerLogout" class="btn-logout">🚪 Sair</button>
         </div>
       </div>
     </header>
 
     <!-- Conteúdo das páginas -->
-    <main :class="{ 'with-header': estaLogado }">
+    <main :class="{ 'with-header': userStore.isAuthenticated }">
       <router-view></router-view>
     </main>
 
@@ -33,58 +33,29 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, watch } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
-import { logout } from './services/api.js';
+import { useUserStore } from './stores/userStore'; // Importa a store
 
 export default {
   name: 'App',
   
   setup() {
-    const router = useRouter();
-    const route = useRoute();
-    
-    const nomeUsuario = ref('');
-
-    // Verifica se está logado baseado no token
-    const estaLogado = computed(() => {
-      return !!localStorage.getItem('token') && route.path !== '/login';
-    });
+    // ===== PINIA STORE =====
+    // Acessa a store de usuário (estado global)
+    const userStore = useUserStore();
 
     /**
-     * Atualiza informações do usuário
-     */
-    const atualizarUsuario = () => {
-      const user = localStorage.getItem('user');
-      if (user) {
-        const userData = JSON.parse(user);
-        nomeUsuario.value = userData.nome;
-      }
-    };
-
-    /**
-     * Faz logout
+     * Faz logout usando a action da store
      */
     const fazerLogout = () => {
       if (confirm('Deseja realmente sair?')) {
-        logout(); // Limpa localStorage
-        router.push('/login');
+        // Chama a action logout da store
+        // Ela já limpa tudo e redireciona
+        userStore.logout();
       }
     };
 
-    // Atualiza usuário quando monta o componente
-    onMounted(() => {
-      atualizarUsuario();
-    });
-
-    // Atualiza usuário quando a rota muda
-    watch(route, () => {
-      atualizarUsuario();
-    });
-
     return {
-      estaLogado,
-      nomeUsuario,
+      userStore,
       fazerLogout
     };
   }

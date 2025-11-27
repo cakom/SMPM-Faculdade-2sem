@@ -1,43 +1,88 @@
-//backend/src/routes/userRoutes.js
-const express = require("express");// Importa o Express
-const router = express.Router();// cria un router isolado para as rotas de usuários
-const user = require("../models/user"); // Importa o modelo User (Mongoose)
+// backend/src/routes/userRoutes.js
+const express = require("express");
+const router = express.Router();
+const User = require("../models/User");
+const bcrypt = require("bcrypt");
 
-//CREATE: cria um novo usuário
-router.post("/", async (req, res) => {// POST /api/users
-    const user = await User.create(req.body); // cria documento no Mongolti com os dados de body
-    res.json(user);// Retorna o usuario criado em JSON
-});// Fim da rota POST
+// CREATE: cria um novo usuário
+router.post("/", async (req, res) => {
+    try {
+        // Criptografa a senha antes de salvar
+        const senhaCriptografada = await bcrypt.hash(req.body.senha, 10);
+        
+        const user = await User.create({
+            ...req.body,
+            senha: senhaCriptografada
+        });
+        
+        // Remove senha da resposta
+        const userResponse = user.toObject();
+        delete userResponse.senha;
+        
+        res.json(userResponse);
+    } catch (error) {
+        res.status(400).json({ erro: error.message });
+    }
+});
 
 // READ: lista todos os usuários
-router.get("/", async (req, res) => { // GET /apl/users 
-    const users = await  User.find(); // Busca todos os documentos da coleção
-    res.json(users);// Retorna o array de usuários
-});// Fim da rota GET (lista)
+router.get("/", async (req, res) => {
+    try {
+        const users = await User.find().select('-senha');  // Não retorna senhas
+        res.json(users);
+    } catch (error) {
+        res.status(500).json({ erro: error.message });
+    }
+});
 
-// UPDATE: atualiza un usuário por ID
-router.put ("/:id", async (req, res) => { // PUT/api/users/:id
-    const user = await User.findByIdAndUpdate( // Atualiza o documento com o ID informado
-    req.params.id, // ID recebido na URL
-    req.body, // Dados novos enviados no body
-    {new: true} // new: true retorna o documento ja atualizado
-    );// Fim do findliyidAndiupdate
-    res.json(user); // Retorna o usuário atualizado
-});// Fim da rota PUT
+// READ: busca um usuário por ID
+router.get("/:id", async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id).select('-senha');
+        if (!user) {
+            return res.status(404).json({ erro: "Usuário não encontrado" });
+        }
+        res.json(user);
+    } catch (error) {
+        res.status(500).json({ erro: error.message });
+    }
+});
 
-//DELETE: remove in usuário por ID
-router.delete("/:id", async (req, res)=> { // DELETE /api/users/tid
-    await User.findByIdAndDelete(req.params.id); // Remove o documento com o ID informado
-    res.json({ message: "Usuário deletado" }); // Retorna mensagem de sucesso
-}); // Fim da rota DELETE
+// UPDATE: atualiza um usuário por ID
+router.put("/:id", async (req, res) => {
+    try {
+        // Se estiver atualizando senha, criptografa
+        if (req.body.senha) {
+            req.body.senha = await bcrypt.hash(req.body.senha, 10);
+        }
+        
+        const user = await User.findByIdAndUpdate(
+            req.params.id,
+            req.body,
+            { new: true }
+        ).select('-senha');
+        
+        if (!user) {
+            return res.status(404).json({ erro: "Usuário não encontrado" });
+        }
+        
+        res.json(user);
+    } catch (error) {
+        res.status(400).json({ erro: error.message });
+    }
+});
 
-module.exports = router; // Exporta o router para ser usado no server
+// DELETE: remove um usuário por ID
+router.delete("/:id", async (req, res) => {
+    try {
+        const user = await User.findByIdAndDelete(req.params.id);
+        if (!user) {
+            return res.status(404).json({ erro: "Usuário não encontrado" });
+        }
+        res.json({ message: "Usuário deletado" });
+    } catch (error) {
+        res.status(500).json({ erro: error.message });
+    }
+});
 
-
-
-
-
-
-
-
-
+module.exports = router;

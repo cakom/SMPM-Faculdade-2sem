@@ -25,7 +25,7 @@ router.use("/machines", machineRoutes);// /api/machines chama machineRoutes
 // Pluga o router no caminho /api
 app.use("/api", router);    // Agora todas as rotas ficam sob/api
 
-// Sobe o servidor na porta 4000
-app.listen(4000, () =>
-console.log(" Servidor rodando em http://localhost:4000") // Mensagem de servidor rodando
+// Sobe o servidor na porta 5000
+app.listen(5000, () =>
+console.log(" Servidor rodando em http://localhost:5000") // Mensagem de servidor rodando
 );
