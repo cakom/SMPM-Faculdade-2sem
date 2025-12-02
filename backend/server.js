@@ -15,9 +15,14 @@ app.use(express.json());
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/manutencao';
 
 mongoose.connect(MONGO_URI)
-    .then(() => console.log('✅ Conectado ao MongoDB!'))
+    .then(() => {
+        console.log('✅ Conectado ao MongoDB!');
+        console.log('📍 Database:', mongoose.connection.name);  // ADICIONE
+        console.log('🔗 Host:', mongoose.connection.host);      // ADICIONE
+        console.log('🌐 URI:', MONGO_URI);                      // ADICIONE
+    })
     .catch(err => console.error('❌ Erro ao conectar MongoDB:', err));
-
+    
 // Importa as rotas
 const authRoutes = require("./src/routes/authRoutes");
 const userRoutes = require("./src/routes/userRoutes");
