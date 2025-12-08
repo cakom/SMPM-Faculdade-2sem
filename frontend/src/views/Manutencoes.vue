@@ -211,7 +211,7 @@ export default {
         
         // Sucesso!
         sucesso.value = '✅ Manutenção registrada com sucesso!';
-        setTimeout(() => sucesso.value = '', 5000);
+        setTimeout(() => sucesso.value = '', 3000);
         
         // Limpa formulário
         novaManutencao.value = {
@@ -241,7 +241,7 @@ export default {
         await maintenanceStore.deleteMaintenance(id);
         
         sucesso.value = '🗑️ Manutenção removida!';
-        setTimeout(() => sucesso.value = '', 5000);
+        setTimeout(() => sucesso.value = '', 3000);
         
       } catch (error) {
         console.error('Erro ao remover:', error);

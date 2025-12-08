@@ -7,7 +7,61 @@ const jwt = require("jsonwebtoken");
 
 const JWT_SECRET = process.env.JWT_SECRET || 'sua-chave-secreta-aqui';
 
-// POST /api/registro - Registrar novo usuário
+/**
+ * @swagger
+ * /api/registro:
+ *   post:
+ *     summary: Registrar novo usuário
+ *     tags: [Autenticação]
+ *     description: Cria um novo usuário no sistema com senha criptografada
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - nome
+ *               - email
+ *               - senha
+ *             properties:
+ *               nome:
+ *                 type: string
+ *                 example: João Silva
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: joao@email.com
+ *               senha:
+ *                 type: string
+ *                 format: password
+ *                 example: senha123
+ *               role:
+ *                 type: string
+ *                 enum: [admin, tecnico, operador]
+ *                 example: operador
+ *     responses:
+ *       201:
+ *         description: Usuário criado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 mensagem:
+ *                   type: string
+ *                   example: Usuário criado com sucesso!
+ *                 usuario:
+ *                   $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Email já cadastrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Erro no servidor
+ */
 router.post("/registro", async (req, res) => {
     try {
         const { nome, email, senha, role } = req.body;
@@ -43,7 +97,56 @@ router.post("/registro", async (req, res) => {
     }
 });
 
-// POST /api/login - Login de usuário
+/**
+ * @swagger
+ * /api/login:
+ *   post:
+ *     summary: Login de usuário
+ *     tags: [Autenticação]
+ *     description: Autentica um usuário e retorna um token JWT
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - senha
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: joao@email.com
+ *               senha:
+ *                 type: string
+ *                 format: password
+ *                 example: senha123
+ *     responses:
+ *       200:
+ *         description: Login realizado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 mensagem:
+ *                   type: string
+ *                   example: Login realizado com sucesso!
+ *                 token:
+ *                   type: string
+ *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+ *                 usuario:
+ *                   $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Email ou senha incorretos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Erro no servidor
+ */
 router.post("/login", async (req, res) => {
     try {
         const { email, senha } = req.body;
