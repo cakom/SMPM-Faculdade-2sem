@@ -16,12 +16,12 @@ const options = {
     },
     servers: [
       {
-        url: 'http://localhost:5000',
-        description: 'Servidor de Desenvolvimento'
-      },
-      {
-        url: 'https://seu-app.onrender.com',
-        description: 'Servidor de Produção'
+        url: process.env.NODE_ENV === 'production' 
+          ? 'https://seu-backend.onrender.com'  // ← Trocar pela URL real do Render
+          : 'http://localhost:5000',
+        description: process.env.NODE_ENV === 'production' 
+          ? 'Servidor de Produção' 
+          : 'Servidor de Desenvolvimento'
       }
     ],
     components: {

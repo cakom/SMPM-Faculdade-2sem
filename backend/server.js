@@ -10,8 +10,32 @@ const { swaggerUi, specs } = require('./swagger');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// ========================================
+// CORS - Configuração para Produção
+// ========================================
+const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://localhost:5000',
+    'https://seu-frontend.onrender.com', // Trocar pela URL real do frontend
+    // Adicione mais URLs conforme necessário
+];
+
+app.use(cors({
+    origin: function(origin, callback) {
+        // Permite requisições sem origin (mobile apps, Postman, etc)
+        if (!origin) return callback(null, true);
+        
+        if (allowedOrigins.indexOf(origin) === -1) {
+            const msg = 'A política de CORS não permite acesso desse domínio.';
+            return callback(new Error(msg), false);
+        }
+        return callback(null, true);
+    },
+    credentials: true
+}));
+
 // Middlewares
-app.use(cors());
 app.use(express.json());
 
 // Conexão MongoDB
@@ -22,7 +46,9 @@ mongoose.connect(MONGO_URI)
         console.log('✅ Conectado ao MongoDB!');
         console.log('📍 Database:', mongoose.connection.name);
         console.log('🔗 Host:', mongoose.connection.host);
-        console.log('🌐 URI:', MONGO_URI);
+        if (process.env.NODE_ENV !== 'production') {
+            console.log('🌐 URI:', MONGO_URI);
+        }
     })
     .catch(err => console.error('❌ Erro ao conectar MongoDB:', err));
     
@@ -50,7 +76,9 @@ app.use("/api/manutencoes", maintenanceRoutes);
 app.get("/", (req, res) => {
     res.json({ 
         mensagem: "🔧 API de Manutenção Preventiva",
-        documentacao: `http://localhost:${PORT}/api-docs`,
+        status: "online",
+        ambiente: process.env.NODE_ENV || "development",
+        documentacao: `/api-docs`,
         rotas: {
             auth: "/api/login e /api/registro",
             users: "/api/users",
@@ -60,8 +88,20 @@ app.get("/", (req, res) => {
     });
 });
 
+// Tratamento de rotas não encontradas
+app.use((req, res) => {
+    res.status(404).json({ erro: "Rota não encontrada" });
+});
+
+// Tratamento de erros
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ erro: "Erro interno do servidor" });
+});
+
 // Inicia o servidor
 app.listen(PORT, () => {
     console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
     console.log(`📚 Documentação Swagger: http://localhost:${PORT}/api-docs`);
+    console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
 });
