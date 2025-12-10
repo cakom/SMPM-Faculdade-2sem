@@ -44,22 +44,39 @@ const router = createRouter({
   routes
 });
 
+// Guard de navegação com segurança reforçada
 router.beforeEach((to, from, next) => {
+  // Pega o token do localStorage
   const token = localStorage.getItem('token');
-  const requerAutenticacao = to.meta.requiresAuth;
+  
+  // Verifica se a rota precisa de autenticação
+  const requerAutenticacao = to.meta.requiresAuth !== false;
+  
+  console.log('🔒 Router Guard:', {
+    para: to.path,
+    requerAuth: requerAutenticacao,
+    temToken: !!token
+  });
   
   // Se a rota precisa de autenticação E não tem token
   if (requerAutenticacao && !token) {
+    console.log('❌ SEM TOKEN - Redirecionando para /login');
+    // Redireciona para login
     next('/login');
-  } 
-  // Se está indo para login mas já está logado
-  else if (to.path === '/login' && token) {
-    next('/');
-  } 
-  // Se está tudo OK, continua
-  else {
-    next();
+    return;
   }
+  
+  // Se está indo para login mas já está logado
+  if (to.path === '/login' && token) {
+    console.log('✅ JÁ LOGADO - Redirecionando para /');
+    // Redireciona para home
+    next('/');
+    return;
+  }
+  
+  // Se está tudo OK, continua
+  console.log('✅ AUTORIZADO - Permitindo acesso');
+  next();
 });
 
 export default router;
