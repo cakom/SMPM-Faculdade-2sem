@@ -1,7 +1,3 @@
-<!--
-  Login.vue - USANDO PINIA STORE
--->
-
 <template>
   <div class="login-container">
     
@@ -30,7 +26,7 @@
         </button>
       </div>
 
-      <!-- Mensagem de erro da store -->
+      <!-- Mensagem de erro -->
       <div v-if="userStore.error" class="alert alert-danger">
         {{ userStore.error }}
       </div>
@@ -134,19 +130,16 @@
 <script>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { useUserStore } from '../stores/userStore'; // Importa a store
+import { useUserStore } from '../stores/userStore';
 
 export default {
   name: 'Login',
   
   setup() {
     const router = useRouter();
-    
-    // ===== PINIA STORE =====
     const userStore = useUserStore();
     
-    // ===== ESTADO LOCAL =====
-    const modo = ref('login'); // 'login' ou 'registro'
+    const modo = ref('login');
     const sucesso = ref('');
     
     const loginForm = ref({
@@ -161,62 +154,29 @@ export default {
       role: 'operador'
     });
 
-    // ===== MÉTODOS =====
-
-    /**
-     * Faz login usando a store
-     */
     const fazerLogin = async () => {
-      // Limpa mensagens
       sucesso.value = '';
       userStore.clearError();
 
       try {
-        // Chama action da store
-        await userStore.login(
-          loginForm.value.email, 
-          loginForm.value.senha
-        );
-
-        // Sucesso! Redireciona
+        await userStore.login(loginForm.value.email, loginForm.value.senha);
         sucesso.value = 'Login realizado com sucesso!';
-        
-        setTimeout(() => {
-          router.push('/');
-        }, 1000);
-
+        setTimeout(() => router.push('/'), 1000);
       } catch (error) {
-        // Erro já está em userStore.error
         console.error('Erro no login:', error);
       }
     };
 
-    /**
-     * Faz registro usando a store
-     */
     const fazerRegistro = async () => {
       sucesso.value = '';
       userStore.clearError();
 
       try {
-        // Chama action da store
         await userStore.register(registroForm.value);
-
-        // Sucesso! Muda para modo login
         sucesso.value = 'Conta criada! Faça login para continuar.';
         modo.value = 'login';
-        
-        // Preenche email no formulário de login
         loginForm.value.email = registroForm.value.email;
-        
-        // Limpa formulário de registro
-        registroForm.value = {
-          nome: '',
-          email: '',
-          senha: '',
-          role: 'operador'
-        };
-
+        registroForm.value = { nome: '', email: '', senha: '', role: 'operador' };
       } catch (error) {
         console.error('Erro no registro:', error);
       }
