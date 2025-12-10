@@ -1,119 +1,102 @@
 import { defineStore } from "pinia";
 import api from "../services/api";
 
-export const useMaintenanceStore = defineStore("maintenance", {
+export const useMachineStore = defineStore("machine", {
     state: () => ({
-        maintenances: [],
+        machines: [],
         loading: false,
         error: null
     }),
 
     getters: {
-        maintenancesByDate: (state) => {
-            return [...state.maintenances].sort((a, b) => {
-                return new Date(b.data) - new Date(a.data);
+        machinesByUrgency: (state) => {
+            return [...state.machines].sort((a, b) => {
+                const dateA = new Date(a.proximaManutencao);
+                const dateB = new Date(b.proximaManutencao);
+                return dateA - dateB;
             });
         },
 
-        maintenancesByType: (state) => {
-            return state.maintenances.reduce((acc, maintenance) => {
-                const tipo = maintenance.tipo || 'Sem tipo';
-                if (!acc[tipo]) {
-                    acc[tipo] = [];
-                }
-                acc[tipo].push(maintenance);
-                return acc;
-            }, {});
-        },
-
-        countByType: (state) => {
-            return state.maintenances.reduce((acc, maintenance) => {
-                const tipo = maintenance.tipo || 'Sem tipo';
-                acc[tipo] = (acc[tipo] || 0) + 1;
-                return acc;
-            }, {});
-        },
-
-        totalMaintenances: (state) => state.maintenances.length,
-
-        recentMaintenances: (state) => {
-            const umMesAtras = new Date();
-            umMesAtras.setMonth(umMesAtras.getMonth() - 1);
-            return state.maintenances.filter(maintenance => {
-                const dataMaintenance = new Date(maintenance.data);
-                return dataMaintenance >= umMesAtras;
+        overdueMachines: (state) => {
+            const hoje = new Date();
+            hoje.setHours(0, 0, 0, 0);
+            return state.machines.filter(machine => {
+                const dataManutencao = new Date(machine.proximaManutencao);
+                return dataManutencao < hoje;
             });
-        }
+        },
+
+        totalMachines: (state) => state.machines.length
     },
 
     actions: {
-        async fetchMaintenances() {
+        async fetchMachines() {
             this.loading = true;
             this.error = null;
             try {
-                const res = await api.get("/api/manutencoes");
-                this.maintenances = res.data;
+                const res = await api.get("/api/maquinas");
+                this.machines = res.data;
             } catch (err) {
-                this.error = err.response?.data?.erro || "Erro ao buscar manutenções";
-                console.error("Erro ao buscar manutenções:", err);
+                this.error = err.response?.data?.erro || "Erro ao buscar máquinas";
+                console.error("Erro ao buscar máquinas:", err);
                 throw err;
             } finally {
                 this.loading = false;
             }
         },
 
-        async addMaintenance(maintenance) {
+        async addMachine(machine) {
             this.loading = true;
             this.error = null;
             try {
-                const res = await api.post("/api/manutencoes", maintenance);
-                this.maintenances.unshift(res.data);
+                const res = await api.post("/api/maquinas", machine);
+                this.machines.push(res.data);
                 return res.data;
             } catch (err) {
-                this.error = err.response?.data?.erro || "Erro ao adicionar manutenção";
-                console.error("Erro ao adicionar manutenção:", err);
+                this.error = err.response?.data?.erro || "Erro ao adicionar máquina";
+                console.error("Erro ao adicionar máquina:", err);
                 throw err;
             } finally {
                 this.loading = false;
             }
         },
 
-        async updateMaintenance(id, updates) {
+        async updateMachine(id, updates) {
             this.loading = true;
             this.error = null;
             try {
-                const res = await api.put(`/api/manutencoes/${id}`, updates);
-                const index = this.maintenances.findIndex(m => m._id === id);
+                const res = await api.put(`/api/maquinas/${id}`, updates);
+                const index = this.machines.findIndex(m => m._id === id);
                 if (index !== -1) {
-                    this.maintenances[index] = res.data;
+                    this.machines[index] = res.data;
                 }
                 return res.data;
             } catch (err) {
-                this.error = err.response?.data?.erro || "Erro ao atualizar manutenção";
-                console.error("Erro ao atualizar manutenção:", err);
+                this.error = err.response?.data?.erro || "Erro ao atualizar máquina";
+                console.error("Erro ao atualizar máquina:", err);
                 throw err;
             } finally {
                 this.loading = false;
             }
         },
 
-        async deleteMaintenance(id) {
+        async deleteMachine(id) {
             this.loading = true;
             this.error = null;
             try {
-                await api.delete(`/api/manutencoes/${id}`);
-                this.maintenances = this.maintenances.filter(m => m._id !== id);
+                await api.delete(`/api/maquinas/${id}`);
+                this.machines = this.machines.filter(m => m._id !== id);
             } catch (err) {
-                this.error = err.response?.data?.erro || "Erro ao remover manutenção";
-                console.error("Erro ao remover manutenção:", err);
+                this.error = err.response?.data?.erro || "Erro ao remover máquina";
+                console.error("Erro ao remover máquina:", err);
                 throw err;
             } finally {
                 this.loading = false;
             }
         },
 
-        getMaintenancesByMachine(machineId) {
-            return this.maintenances.filter(m => m.maquinaId === machineId);
+        getMachineById(id) {
+            return this.machines.find(m => m._id === id);
         },
 
         clearError() {
