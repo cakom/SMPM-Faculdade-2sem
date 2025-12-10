@@ -3,11 +3,16 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 require("dotenv").config();
 
+console.log('🚀 Iniciando servidor...');
+
+// Importa configuração do Swagger
 const { swaggerUi, specs } = require('./swagger');
+console.log('✅ Swagger carregado');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// CORS
 const allowedOrigins = [
     'http://localhost:5173',
     'http://localhost:3000',
@@ -28,9 +33,12 @@ app.use(cors({
     },
     credentials: true
 }));
+console.log('✅ CORS configurado');
 
 app.use(express.json());
+console.log('✅ JSON parser configurado');
 
+// MongoDB
 const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URL || 'mongodb://localhost:27017/manutencao';
 
 console.log('🔗 Tentando conectar ao MongoDB...');
@@ -38,29 +46,52 @@ console.log('📍 Ambiente:', process.env.NODE_ENV || 'development');
 
 mongoose.connect(MONGO_URI)
     .then(() => {
-        console.log('✅ Conectado ao MongoDB!');
+        console.log('✅ MongoDB CONECTADO!');
         console.log('📍 Database:', mongoose.connection.name);
         console.log('🔗 Host:', mongoose.connection.host);
     })
     .catch(err => {
-        console.error('❌ Erro ao conectar MongoDB:', err.message);
+        console.error('❌ ERRO ao conectar MongoDB:', err.message);
     });
 
-const authRoutes = require("./src/routes/authRoutes");
-const userRoutes = require("./src/routes/userRoutes");
-const machineRoutes = require("./src/routes/machineRoutes");
-const maintenanceRoutes = require("./src/routes/maintenanceRoutes");
+// IMPORTAR ROTAS
+console.log('📦 Carregando rotas...');
 
+const authRoutes = require("./src/routes/authRoutes");
+console.log('✅ authRoutes carregado');
+
+const userRoutes = require("./src/routes/userRoutes");
+console.log('✅ userRoutes carregado');
+
+const machineRoutes = require("./src/routes/machineRoutes");
+console.log('✅ machineRoutes carregado');
+
+const maintenanceRoutes = require("./src/routes/maintenanceRoutes");
+console.log('✅ maintenanceRoutes carregado');
+
+// SWAGGER
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {
     customCss: '.swagger-ui .topbar { display: none }',
     customSiteTitle: "API Manutenção - Documentação"
 }));
+console.log('✅ Swagger registrado em /api-docs');
+
+// REGISTRAR ROTAS
+console.log('🔗 Registrando rotas...');
 
 app.use("/api", authRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/maquinas", machineRoutes);
-app.use("/api/manutencoes", maintenanceRoutes);
+console.log('✅ Rota /api (auth) registrada');
 
+app.use("/api/users", userRoutes);
+console.log('✅ Rota /api/users registrada');
+
+app.use("/api/maquinas", machineRoutes);
+console.log('✅ Rota /api/maquinas registrada');
+
+app.use("/api/manutencoes", maintenanceRoutes);
+console.log('✅ Rota /api/manutencoes registrada');
+
+// Rota raiz
 app.get("/", (req, res) => {
     res.json({ 
         mensagem: "🔧 API de Manutenção Preventiva",
@@ -78,6 +109,7 @@ app.get("/", (req, res) => {
     });
 });
 
+// Health check
 app.get("/health", (req, res) => {
     const health = {
         uptime: process.uptime(),
@@ -88,10 +120,13 @@ app.get("/health", (req, res) => {
     res.status(200).json(health);
 });
 
+// 404
 app.use((req, res) => {
+    console.log('⚠️ Rota não encontrada:', req.method, req.path);
     res.status(404).json({ erro: "Rota não encontrada" });
 });
 
+// Error handler
 app.use((err, req, res, next) => {
     console.error('❌ Erro:', err.stack);
     res.status(500).json({ 
@@ -100,9 +135,14 @@ app.use((err, req, res, next) => {
     });
 });
 
+// Inicia servidor
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
-    console.log(`📚 Documentação Swagger: http://localhost:${PORT}/api-docs`);
+    console.log('='.repeat(50));
+    console.log('🚀 SERVIDOR ONLINE!');
+    console.log('='.repeat(50));
+    console.log(`📍 URL: http://localhost:${PORT}`);
+    console.log(`📚 Docs: http://localhost:${PORT}/api-docs`);
     console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
     console.log(`🚂 Railway: ${process.env.RAILWAY_ENVIRONMENT || 'Não detectado'}`);
+    console.log('='.repeat(50));
 });
