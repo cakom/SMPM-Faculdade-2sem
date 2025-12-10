@@ -1,280 +1,121 @@
-/**
- * machineStore.js - Store Pinia para Máquinas
- * 
- * Gerencia o estado global de todas as máquinas do sistema.
- * Componentes podem acessar e modificar os dados através desta store.
- */
-
 import { defineStore } from "pinia";
 import api from "../services/api";
 
-export const useMachineStore = defineStore("machine", {
-    
+export const useMaintenanceStore = defineStore("maintenance", {
     state: () => ({
-        machines: [],
+        maintenances: [],
         loading: false,
         error: null
     }),
 
     getters: {
-        machinesByUrgency: (state) => {
-            return [...state.machines].sort((a, b) => {
-                const dateA = new Date(a.proximaManutencao);
-                const dateB = new Date(b.proximaManutencao);
-                return dateA - dateB;
+        maintenancesByDate: (state) => {
+            return [...state.maintenances].sort((a, b) => {
+                return new Date(b.data) - new Date(a.data);
             });
         },
 
-        overdueMachines: (state) => {
-            const hoje = new Date();
-            hoje.setHours(0, 0, 0, 0);
-            
-            return state.machines.filter(machine => {
-                const dataManutencao = new Date(machine.proximaManutencao);
-                return dataManutencao < hoje;
-            });
-        },
-
-        totalMachines: (state) => state.machines.length
-    },
-
-    actions: {
-        async fetchMachines() {
-            this.loading = true;
-            this.error = null;
-            
-            try {
-                const res = await api.get("/api/maquinas");
-                this.machines = res.data;
-                
-            } catch (err) {
-                this.error = err.response?.data?.erro || "Erro ao buscar máquinas";
-                console.error("Erro ao buscar máquinas:", err);
-                throw err;
-                
-            } finally {
-                this.loading = false;
-            }
-        },
-
-        async addMachine(machine) {
-            this.loading = true;
-            this.error = null;
-            
-            try {
-                const res = await api.post("/api/maquinas", machine);
-                this.machines.push(res.data);
-                return res.data;
-                
-            } catch (err) {
-                this.error = err.response?.data?.erro || "Erro ao adicionar máquina";
-                console.error("Erro ao adicionar máquina:", err);
-                throw err;
-                
-            } finally {
-                this.loading = false;
-            }
-        },
-
-        async updateMachine(id, updates) {
-            this.loading = true;
-            this.error = null;
-            
-            try {
-                const res = await api.put(`/api/maquinas/${id}`, updates);
-                
-                const index = this.machines.findIndex(m => m._id === id);
-                if (index !== -1) {
-                    this.machines[index] = res.data;
+        maintenancesByType: (state) => {
+            return state.maintenances.reduce((acc, maintenance) => {
+                const tipo = maintenance.tipo || 'Sem tipo';
+                if (!acc[tipo]) {
+                    acc[tipo] = [];
                 }
-                
-                return res.data;
-                
-            } catch (err) {
-                this.error = err.response?.data?.erro || "Erro ao atualizar máquina";
-                console.error("Erro ao atualizar máquina:", err);
-                throw err;
-                
-            } finally {
-                this.loading = false;
-            }
+                acc[tipo].push(maintenance);
+                return acc;
+            }, {});
         },
 
-        async deleteMachine(id) {
-            this.loading = true;
-            this.error = null;
-            
-            try {
-                await api.delete(`/api/maquinas/${id}`);
-                this.machines = this.machines.filter(m => m._id !== id);
-                
-            } catch (err) {
-                this.error = err.response?.data?.erro || "Erro ao remover máquina";
-                console.error("Erro ao remover máquina:", err);
-                throw err;
-                
-            } finally {
-                this.loading = false;
-            }
+        countByType: (state) => {
+            return state.maintenances.reduce((acc, maintenance) => {
+                const tipo = maintenance.tipo || 'Sem tipo';
+                acc[tipo] = (acc[tipo] || 0) + 1;
+                return acc;
+            }, {});
         },
 
-        getMachineById(id) {
-            return this.machines.find(m => m._id === id);
-        },
+        totalMaintenances: (state) => state.maintenances.length,
 
-        clearError() {
-            this.error = null;
+        recentMaintenances: (state) => {
+            const umMesAtras = new Date();
+            umMesAtras.setMonth(umMesAtras.getMonth() - 1);
+            return state.maintenances.filter(maintenance => {
+                const dataMaintenance = new Date(maintenance.data);
+                return dataMaintenance >= umMesAtras;
+            });
         }
-    }
-});
-            return [...state.machines].sort((a, b) => {
-                const dateA = new Date(a.proximaManutencao);
-                const dateB = new Date(b.proximaManutencao);
-                return dateA - dateB; // Ordem crescente (mais próximas primeiro)
-            });
-        },
-
-        /**
-         * Retorna apenas máquinas com manutenção atrasada
-         */
-        overdueMachines: (state) => {
-            const hoje = new Date();
-            hoje.setHours(0, 0, 0, 0);
-            
-            return state.machines.filter(machine => {
-                const dataManutencao = new Date(machine.proximaManutencao);
-                return dataManutencao < hoje;
-            });
-        },
-
-        /**
-         * Retorna total de máquinas cadastradas
-         */
-        totalMachines: (state) => state.machines.length
     },
 
-    // ===== ACTIONS =====
-    // Métodos que modificam o estado e chamam a API
     actions: {
-        /**
-         * Busca todas as máquinas do backend
-         */
-        async fetchMachines() {
-            this.loading = true;   // Ativa loading
-            this.error = null;     // Limpa erros anteriores
-            
-            try {
-                // GET /api/maquinas
-                const res = await api.get("/maquinas");
-                
-                // Atualiza estado com os dados da API
-                this.machines = res.data;
-                
-            } catch (err) {
-                // Captura e armazena erro
-                this.error = err.response?.data?.erro || "Erro ao buscar máquinas";
-                console.error("Erro ao buscar máquinas:", err);
-                throw err; // Repassa o erro para o componente tratar
-                
-            } finally {
-                this.loading = false; // Desativa loading sempre
-            }
-        },
-
-        /**
-         * Adiciona uma nova máquina
-         * @param {Object} machine - Dados da máquina { nome, tipo, local, proximaManutencao }
-         */
-        async addMachine(machine) {
+        async fetchMaintenances() {
             this.loading = true;
             this.error = null;
-            
             try {
-                // POST /api/maquinas
-                const res = await api.post("/maquinas", machine);
-                
-                // Adiciona a nova máquina no estado local
-                this.machines.push(res.data);
-                
-                return res.data; // Retorna a máquina criada
-                
+                const res = await api.get("/api/manutencoes");
+                this.maintenances = res.data;
             } catch (err) {
-                this.error = err.response?.data?.erro || "Erro ao adicionar máquina";
-                console.error("Erro ao adicionar máquina:", err);
+                this.error = err.response?.data?.erro || "Erro ao buscar manutenções";
+                console.error("Erro ao buscar manutenções:", err);
                 throw err;
-                
             } finally {
                 this.loading = false;
             }
         },
 
-        /**
-         * Atualiza uma máquina existente
-         * @param {string} id - ID da máquina
-         * @param {Object} updates - Campos a serem atualizados
-         */
-        async updateMachine(id, updates) {
+        async addMaintenance(maintenance) {
             this.loading = true;
             this.error = null;
-            
             try {
-                // PUT /api/maquinas/:id
-                const res = await api.put(`/maquinas/${id}`, updates);
-                
-                // Atualiza no estado local
-                const index = this.machines.findIndex(m => m._id === id);
-                if (index !== -1) {
-                    this.machines[index] = res.data;
-                }
-                
+                const res = await api.post("/api/manutencoes", maintenance);
+                this.maintenances.unshift(res.data);
                 return res.data;
-                
             } catch (err) {
-                this.error = err.response?.data?.erro || "Erro ao atualizar máquina";
-                console.error("Erro ao atualizar máquina:", err);
+                this.error = err.response?.data?.erro || "Erro ao adicionar manutenção";
+                console.error("Erro ao adicionar manutenção:", err);
                 throw err;
-                
             } finally {
                 this.loading = false;
             }
         },
 
-        /**
-         * Remove uma máquina
-         * @param {string} id - ID da máquina a ser removida
-         */
-        async deleteMachine(id) {
+        async updateMaintenance(id, updates) {
             this.loading = true;
             this.error = null;
-            
             try {
-                // DELETE /api/maquinas/:id
-                await api.delete(`/maquinas/${id}`);
-                
-                // Remove do estado local
-                this.machines = this.machines.filter(m => m._id !== id);
-                
+                const res = await api.put(`/api/manutencoes/${id}`, updates);
+                const index = this.maintenances.findIndex(m => m._id === id);
+                if (index !== -1) {
+                    this.maintenances[index] = res.data;
+                }
+                return res.data;
             } catch (err) {
-                this.error = err.response?.data?.erro || "Erro ao remover máquina";
-                console.error("Erro ao remover máquina:", err);
+                this.error = err.response?.data?.erro || "Erro ao atualizar manutenção";
+                console.error("Erro ao atualizar manutenção:", err);
                 throw err;
-                
             } finally {
                 this.loading = false;
             }
         },
 
-        /**
-         * Busca uma máquina específica por ID
-         * @param {string} id - ID da máquina
-         */
-        getMachineById(id) {
-            return this.machines.find(m => m._id === id);
+        async deleteMaintenance(id) {
+            this.loading = true;
+            this.error = null;
+            try {
+                await api.delete(`/api/manutencoes/${id}`);
+                this.maintenances = this.maintenances.filter(m => m._id !== id);
+            } catch (err) {
+                this.error = err.response?.data?.erro || "Erro ao remover manutenção";
+                console.error("Erro ao remover manutenção:", err);
+                throw err;
+            } finally {
+                this.loading = false;
+            }
         },
 
-        /**
-         * Limpa o estado de erro
-         */
+        getMaintenancesByMachine(machineId) {
+            return this.maintenances.filter(m => m.maquinaId === machineId);
+        },
+
         clearError() {
             this.error = null;
         }
