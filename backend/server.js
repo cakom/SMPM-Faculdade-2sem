@@ -1,4 +1,4 @@
-// backend/server.js
+// backend/server.js - Otimizado para Railway
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -17,16 +17,16 @@ const allowedOrigins = [
     'http://localhost:5173',
     'http://localhost:3000',
     'http://localhost:5000',
-    'https://seu-frontend.onrender.com', // Trocar pela URL real do frontend
-    // Adicione mais URLs conforme necessário
-];
+    process.env.FRONTEND_URL,
+    // Railway adiciona automaticamente
+].filter(Boolean);
 
 app.use(cors({
     origin: function(origin, callback) {
         // Permite requisições sem origin (mobile apps, Postman, etc)
         if (!origin) return callback(null, true);
         
-        if (allowedOrigins.indexOf(origin) === -1) {
+        if (allowedOrigins.indexOf(origin) === -1 && !origin.includes('railway.app')) {
             const msg = 'A política de CORS não permite acesso desse domínio.';
             return callback(new Error(msg), false);
         }
@@ -39,7 +39,10 @@ app.use(cors({
 app.use(express.json());
 
 // Conexão MongoDB
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/manutencao';
+const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URL || 'mongodb://localhost:27017/manutencao';
+
+console.log('🔗 Tentando conectar ao MongoDB...');
+console.log('📍 Ambiente:', process.env.NODE_ENV || 'development');
 
 mongoose.connect(MONGO_URI)
     .then(() => {
@@ -50,7 +53,10 @@ mongoose.connect(MONGO_URI)
             console.log('🌐 URI:', MONGO_URI);
         }
     })
-    .catch(err => console.error('❌ Erro ao conectar MongoDB:', err));
+    .catch(err => {
+        console.error('❌ Erro ao conectar MongoDB:', err.message);
+        console.error('💡 Verifique se a variável MONGO_URI ou MONGODB_URL está configurada');
+    });
     
 // Importa as rotas
 const authRoutes = require("./src/routes/authRoutes");
@@ -72,13 +78,15 @@ app.use("/api/users", userRoutes);
 app.use("/api/maquinas", machineRoutes);
 app.use("/api/manutencoes", maintenanceRoutes);
 
-// Rota de teste
+// Rota de teste (health check)
 app.get("/", (req, res) => {
     res.json({ 
         mensagem: "🔧 API de Manutenção Preventiva",
         status: "online",
         ambiente: process.env.NODE_ENV || "development",
         documentacao: `/api-docs`,
+        railway: process.env.RAILWAY_ENVIRONMENT ? "✅ Rodando no Railway" : "❌ Local",
+        mongodb: mongoose.connection.readyState === 1 ? "✅ Conectado" : "❌ Desconectado",
         rotas: {
             auth: "/api/login e /api/registro",
             users: "/api/users",
@@ -88,6 +96,17 @@ app.get("/", (req, res) => {
     });
 });
 
+// Health check para Railway
+app.get("/health", (req, res) => {
+    const health = {
+        uptime: process.uptime(),
+        status: 'OK',
+        timestamp: Date.now(),
+        mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+    };
+    res.status(200).json(health);
+});
+
 // Tratamento de rotas não encontradas
 app.use((req, res) => {
     res.status(404).json({ erro: "Rota não encontrada" });
@@ -95,13 +114,17 @@ app.use((req, res) => {
 
 // Tratamento de erros
 app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).json({ erro: "Erro interno do servidor" });
+    console.error('❌ Erro:', err.stack);
+    res.status(500).json({ 
+        erro: "Erro interno do servidor",
+        mensagem: process.env.NODE_ENV === 'production' ? 'Erro no servidor' : err.message
+    });
 });
 
 // Inicia o servidor
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
     console.log(`📚 Documentação Swagger: http://localhost:${PORT}/api-docs`);
     console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🚂 Railway: ${process.env.RAILWAY_ENVIRONMENT || 'Não detectado'}`);
 });
