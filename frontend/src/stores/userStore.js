@@ -1,77 +1,46 @@
-/**
- * stores/userStore.js - Store Pinia para Usuários e Autenticação
- */
-
-// IMPORTAÇÕES (só uma vez!)
 import { defineStore } from "pinia";
 import api from "../services/api";
 
 export const useUserStore = defineStore("user", {
     
-    // ===== ESTADO =====
     state: () => ({
-        // Usuário atual logado
         currentUser: null,
         token: null,
         isAuthenticated: false,
-        
-        // Lista de usuários (admin)
         users: [],
-        
-        // Estados de loading e erro
         loading: false,
         error: null
     }),
 
-    // ===== GETTERS =====
     getters: {
-        /**
-         * Verifica se é administrador
-         */
         isAdmin: (state) => {
             return state.currentUser?.role === 'admin';
         },
 
-        /**
-         * Verifica se é técnico
-         */
         isTecnico: (state) => {
             return state.currentUser?.role === 'tecnico';
         },
 
-        /**
-         * Verifica se é operador
-         */
         isOperador: (state) => {
             return state.currentUser?.role === 'operador';
         },
 
-        /**
-         * Nome do usuário logado
-         */
         userName: (state) => {
             return state.currentUser?.nome || 'Usuário';
         },
 
-        /**
-         * Email do usuário logado
-         */
         userEmail: (state) => {
             return state.currentUser?.email || '';
         }
     },
 
-    // ===== ACTIONS =====
     actions: {
-        /**
-         * Faz login do usuário
-         */
         async login(email, senha) {
             this.loading = true;
             this.error = null;
             
             try {
-                const res = await api.post("/login", { email, senha });
+                const res = await api.post("/api/login", { email, senha });
                 
                 this.token = res.data.token;
                 this.currentUser = res.data.usuario;
@@ -94,15 +63,12 @@ export const useUserStore = defineStore("user", {
             }
         },
 
-        /**
-         * Registra novo usuário
-         */
         async register(userData) {
             this.loading = true;
             this.error = null;
             
             try {
-                const res = await api.post("/registro", userData);
+                const res = await api.post("/api/registro", userData);
                 return res.data;
                 
             } catch (err) {
@@ -115,9 +81,6 @@ export const useUserStore = defineStore("user", {
             }
         },
 
-        /**
-         * Faz logout
-         */
         logout() {
             this.currentUser = null;
             this.token = null;
@@ -129,15 +92,11 @@ export const useUserStore = defineStore("user", {
             
             delete api.defaults.headers.common['Authorization'];
             
-            // Redireciona para login
             if (window.location.pathname !== '/login') {
                 window.location.href = '/login';
             }
         },
 
-        /**
-         * Restaura sessão do localStorage
-         */
         restoreSession() {
             const token = localStorage.getItem('token');
             const user = localStorage.getItem('user');
@@ -151,15 +110,12 @@ export const useUserStore = defineStore("user", {
             }
         },
 
-        /**
-         * Busca todos os usuários (admin)
-         */
         async fetchUsers() {
             this.loading = true;
             this.error = null;
             
             try {
-                const res = await api.get("/users");
+                const res = await api.get("/api/users");
                 this.users = res.data;
                 
             } catch (err) {
@@ -172,15 +128,12 @@ export const useUserStore = defineStore("user", {
             }
         },
 
-        /**
-         * Adiciona novo usuário (admin)
-         */
         async addUser(user) {
             this.loading = true;
             this.error = null;
             
             try {
-                const res = await api.post("/users", user);
+                const res = await api.post("/api/users", user);
                 this.users.push(res.data);
                 return res.data;
                 
@@ -194,15 +147,12 @@ export const useUserStore = defineStore("user", {
             }
         },
 
-        /**
-         * Remove usuário (admin)
-         */
         async deleteUser(id) {
             this.loading = true;
             this.error = null;
             
             try {
-                await api.delete(`/users/${id}`);
+                await api.delete(`/api/users/${id}`);
                 this.users = this.users.filter(u => u._id !== id);
                 
             } catch (err) {
@@ -215,15 +165,12 @@ export const useUserStore = defineStore("user", {
             }
         },
 
-        /**
-         * Atualiza usuário
-         */
         async updateUser(id, updates) {
             this.loading = true;
             this.error = null;
             
             try {
-                const res = await api.put(`/users/${id}`, updates);
+                const res = await api.put(`/api/users/${id}`, updates);
                 
                 if (id === this.currentUser?._id) {
                     this.currentUser = res.data;
@@ -247,9 +194,6 @@ export const useUserStore = defineStore("user", {
             }
         },
 
-        /**
-         * Limpa mensagens de erro
-         */
         clearError() {
             this.error = null;
         }
