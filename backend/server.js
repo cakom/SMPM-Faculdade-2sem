@@ -1,4 +1,4 @@
-// backend/server.js - Otimizado para Railway
+// backend/server.js - Configuração otimizada para Railway
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -17,7 +17,7 @@ const allowedOrigins = [
     'http://localhost:5173',
     'http://localhost:3000',
     'http://localhost:5000',
-    'https://smpm-faculdade-2sem.vercel.app',
+    'https://smpm-faculdade-2sem.vercel.app', // Certifique-se de que essa URL é a mesma do seu frontend
     process.env.FRONTEND_URL,
     // Railway adiciona automaticamente
 ].filter(Boolean);
@@ -58,12 +58,6 @@ mongoose.connect(MONGO_URI)
         console.error('❌ Erro ao conectar MongoDB:', err.message);
         console.error('💡 Verifique se a variável MONGO_URI ou MONGODB_URL está configurada');
     });
-    
-// Importa as rotas
-const authRoutes = require("./src/routes/authRoutes");
-const userRoutes = require("./src/routes/userRoutes");
-const machineRoutes = require("./src/routes/machineRoutes");
-const maintenanceRoutes = require("./src/routes/maintenanceRoutes");
 
 // ========================================
 // SWAGGER - DOCUMENTAÇÃO DA API
@@ -74,6 +68,11 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {
 }));
 
 // Registra as rotas
+const authRoutes = require("./src/routes/authRoutes");
+const userRoutes = require("./src/routes/userRoutes");
+const machineRoutes = require("./src/routes/machineRoutes");
+const maintenanceRoutes = require("./src/routes/maintenanceRoutes");
+
 app.use("/api", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/maquinas", machineRoutes);
@@ -124,6 +123,9 @@ app.use((err, req, res, next) => {
 
 // Inicia o servidor
 app.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ Servidor rodando na porta ${PORT}`);
+});
+
     console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
     console.log(`📚 Documentação Swagger: http://localhost:${PORT}/api-docs`);
     console.log(`🌍 Ambiente: ${process.env.NODE_ENV || 'development'}`);
