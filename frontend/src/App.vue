@@ -1,289 +1,340 @@
-<!--
-  App.vue - COM PINIA STORE
--->
-
 <template>
   <div id="app">
-    
-    <!-- Menu só aparece se estiver logado -->
-    <header v-if="userStore.isAuthenticated && $route.path !== '/login'">
-      <div class="menu-container">
-        <h1>🔧 Sistema de Manutenção</h1>
-        
-        <nav class="menu">
-          <router-link to="/" class="menu-item">🏠 Home</router-link>
-          <router-link to="/maquinas" class="menu-item">🏭 Máquinas</router-link>
-          <router-link to="/manutencoes" class="menu-item">🔧 Manutenções</router-link>
-          <router-link to="/relatorios" class="menu-item">📊 Relatórios</router-link>
-        </nav>
-        
-        <div class="user-info">
-          <span>👤 {{ userStore.userName }}</span>
-          <button @click="fazerLogout" class="btn-logout">🚪 Sair</button>
-        </div>
-      </div>
-    </header>
+    <!-- Navbar - só mostra se estiver logado -->
+    <nav v-if="userStore.isAuthenticated" class="navbar">
+      <div class="navbar-container">
+        <!-- Logo -->
+        <router-link to="/" class="navbar-brand">
+          <span class="brand-icon">🔧</span>
+          <span class="brand-text">Sistema de Manutenção</span>
+        </router-link>
 
-    <!-- Conteúdo das páginas -->
-    <main :class="{ 'with-header': userStore.isAuthenticated }">
-      <router-view></router-view>
+        <!-- Menu Desktop -->
+        <div class="navbar-menu" :class="{ 'mobile-open': mobileMenuOpen }">
+          <router-link to="/" class="nav-link" @click="closeMobileMenu">
+            <span class="nav-icon">🏠</span>
+            <span>Home</span>
+          </router-link>
+          
+          <router-link to="/maquinas" class="nav-link" @click="closeMobileMenu">
+            <span class="nav-icon">🏭</span>
+            <span>Máquinas</span>
+          </router-link>
+          
+          <router-link to="/manutencoes" class="nav-link" @click="closeMobileMenu">
+            <span class="nav-icon">🔧</span>
+            <span>Manutenções</span>
+          </router-link>
+          
+          <router-link to="/relatorios" class="nav-link" @click="closeMobileMenu">
+            <span class="nav-icon">📊</span>
+            <span>Relatórios</span>
+          </router-link>
+        </div>
+
+        <!-- Usuário e Logout -->
+        <div class="navbar-user">
+          <div class="user-info">
+            <span class="user-icon">👤</span>
+            <span class="user-name">{{ userStore.userName }}</span>
+          </div>
+          <button @click="handleLogout" class="btn-logout">
+            <span>🚪</span>
+            Sair
+          </button>
+        </div>
+
+        <!-- Botão Mobile -->
+        <button class="mobile-toggle" @click="toggleMobileMenu">
+          <span v-if="!mobileMenuOpen">☰</span>
+          <span v-else>✕</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Conteúdo Principal -->
+    <main class="main-content" :class="{ 'with-navbar': userStore.isAuthenticated }">
+      <div class="content-wrapper">
+        <router-view />
+      </div>
     </main>
 
+    <!-- Footer -->
+    <footer v-if="userStore.isAuthenticated" class="footer">
+      <p>Sistema de Manutenção Preventiva © 2025</p>
+    </footer>
   </div>
 </template>
 
 <script>
-import { useUserStore } from './stores/userStore'; // Importa a store
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useUserStore } from './stores/userStore';
 
 export default {
   name: 'App',
   
   setup() {
-    // ===== PINIA STORE =====
-    // Acessa a store de usuário (estado global)
+    const router = useRouter();
     const userStore = useUserStore();
+    const mobileMenuOpen = ref(false);
 
-    /**
-     * Faz logout usando a action da store
-     */
-    const fazerLogout = () => {
-      if (confirm('Deseja realmente sair?')) {
-        // Chama a action logout da store
-        // Ela já limpa tudo e redireciona
+    const toggleMobileMenu = () => {
+      mobileMenuOpen.value = !mobileMenuOpen.value;
+    };
+
+    const closeMobileMenu = () => {
+      mobileMenuOpen.value = false;
+    };
+
+    const handleLogout = () => {
+      if (confirm('Tem certeza que deseja sair?')) {
         userStore.logout();
       }
     };
 
+    onMounted(() => {
+      userStore.restoreSession();
+    });
+
     return {
       userStore,
-      fazerLogout
+      mobileMenuOpen,
+      toggleMobileMenu,
+      closeMobileMenu,
+      handleLogout
     };
   }
 };
 </script>
 
-<style>
-/* Reset básico */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+<style scoped>
+/* ========================================
+   NAVBAR
+   ======================================== */
 
-#app {
-  font-family: Arial, sans-serif;
-  background-color: #f0f2f5;
-  min-height: 100vh;
-}
-
-/* Header/Menu */
-header {
+.navbar {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 1000;
+  backdrop-filter: blur(10px);
 }
 
-.menu-container {
+.navbar-container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 15px 20px;
+  padding: 0 2rem;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 20px;
+  justify-content: space-between;
+  height: 70px;
 }
 
-header h1 {
-  font-size: 24px;
-  white-space: nowrap;
-}
-
-/* Menu de navegação */
-.menu {
+/* Logo */
+.navbar-brand {
   display: flex;
-  gap: 10px;
-  flex: 1;
-  justify-content: center;
-}
-
-.menu-item {
-  color: white;
+  align-items: center;
+  gap: 0.75rem;
   text-decoration: none;
-  padding: 10px 20px;
+  color: white;
+  font-weight: 700;
+  font-size: 1.25rem;
+  transition: transform 0.2s;
+}
+
+.navbar-brand:hover {
+  transform: scale(1.05);
+}
+
+.brand-icon {
+  font-size: 1.75rem;
+}
+
+.brand-text {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .brand-text {
+    display: block;
+  }
+}
+
+/* Menu */
+.navbar-menu {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
   border-radius: 8px;
-  transition: all 0.3s;
   font-weight: 500;
+  transition: all 0.2s;
+  font-size: 0.95rem;
 }
 
-.menu-item:hover {
-  background: rgba(255,255,255,0.2);
+.nav-link:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
 }
 
-.menu-item.router-link-active {
-  background: rgba(255,255,255,0.3);
+.nav-link.router-link-active {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
   font-weight: 600;
 }
 
-/* Info do usuário */
-.user-info {
+.nav-icon {
+  font-size: 1.25rem;
+}
+
+/* Usuário */
+.navbar-user {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 1rem;
+}
+
+.user-info {
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+  color: white;
+  font-weight: 500;
+}
+
+@media (min-width: 768px) {
+  .user-info {
+    display: flex;
+  }
+}
+
+.user-icon {
+  font-size: 1.5rem;
+}
+
+.user-name {
+  font-size: 0.95rem;
 }
 
 .btn-logout {
-  background: rgba(255,255,255,0.2);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  background: rgba(255, 255, 255, 0.2);
   color: white;
-  border: 2px solid white;
-  padding: 8px 16px;
-  border-radius: 6px;
-  cursor: pointer;
+  border: none;
+  border-radius: 8px;
   font-weight: 600;
-  transition: all 0.3s;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.95rem;
 }
 
 .btn-logout:hover {
-  background: white;
-  color: #667eea;
-}
-
-/* Conteúdo principal */
-main {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 30px 20px;
-}
-
-main.with-header {
-  min-height: calc(100vh - 70px);
-}
-
-/* Estilos globais reutilizáveis */
-.btn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 6px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: all 0.3s;
-  font-weight: 500;
-}
-
-.btn-primary {
-  background-color: #667eea;
-  color: white;
-}
-
-.btn-primary:hover {
-  background-color: #5568d3;
+  background: rgba(255, 255, 255, 0.3);
   transform: translateY(-2px);
 }
 
-.btn-success {
-  background-color: #51cf66;
+/* Mobile Toggle */
+.mobile-toggle {
+  display: none;
+  background: none;
+  border: none;
   color: white;
+  font-size: 1.75rem;
+  cursor: pointer;
+  padding: 0.5rem;
 }
 
-.btn-success:hover {
-  background-color: #40c057;
+/* ========================================
+   CONTEÚDO PRINCIPAL
+   ======================================== */
+
+.main-content {
+  min-height: calc(100vh - 70px);
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 2rem 0;
 }
 
-.btn-danger {
-  background-color: #ff6b6b;
-  color: white;
+.main-content.with-navbar {
+  min-height: calc(100vh - 140px);
 }
 
-.btn-danger:hover {
-  background-color: #ee5a52;
+.content-wrapper {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem;
 }
 
-.card {
+/* ========================================
+   FOOTER
+   ======================================== */
+
+.footer {
   background: white;
-  padding: 25px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  margin-bottom: 20px;
+  padding: 1.5rem;
+  text-align: center;
+  color: #6b7280;
+  border-top: 1px solid #e5e7eb;
+  font-size: 0.9rem;
 }
 
-.form-group {
-  margin-bottom: 20px;
-}
+/* ========================================
+   RESPONSIVIDADE MOBILE
+   ======================================== */
 
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  color: #333;
-  font-weight: 500;
-}
-
-.form-group input,
-.form-group select,
-.form-group textarea {
-  width: 100%;
-  padding: 12px;
-  border: 2px solid #e0e0e0;
-  border-radius: 6px;
-  font-size: 15px;
-  transition: border-color 0.3s;
-}
-
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
-  outline: none;
-  border-color: #667eea;
-}
-
-.alert {
-  padding: 15px;
-  border-radius: 6px;
-  margin-bottom: 20px;
-}
-
-.alert-success {
-  background-color: #d3f9d8;
-  color: #2b8a3e;
-  border-left: 4px solid #51cf66;
-}
-
-.alert-danger {
-  background-color: #ffe3e3;
-  color: #c92a2a;
-  border-left: 4px solid #ff6b6b;
-}
-
-/* Responsivo */
 @media (max-width: 768px) {
-  .menu-container {
+  .navbar-container {
+    padding: 0 1rem;
+  }
+
+  .mobile-toggle {
+    display: block;
+  }
+
+  .navbar-menu {
+    position: fixed;
+    top: 70px;
+    left: 0;
+    right: 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     flex-direction: column;
-    gap: 15px;
+    padding: 1rem;
+    gap: 0.5rem;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
   }
-  
-  header h1 {
-    font-size: 20px;
+
+  .navbar-menu.mobile-open {
+    transform: translateX(0);
   }
-  
-  .menu {
-    width: 100%;
-    flex-wrap: wrap;
-    justify-content: center;
+
+  .nav-link {
+    padding: 1rem;
+    font-size: 1.1rem;
   }
-  
-  .menu-item {
-    padding: 8px 15px;
-    font-size: 14px;
+
+  .navbar-user {
+    display: none;
   }
-  
-  .user-info {
-    width: 100%;
-    justify-content: center;
+
+  .main-content {
+    padding: 1rem 0;
   }
-  
-  main {
-    padding: 15px 10px;
+
+  .content-wrapper {
+    padding: 0 1rem;
   }
 }
 </style>
