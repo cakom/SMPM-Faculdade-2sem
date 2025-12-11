@@ -147,13 +147,13 @@
       <div class="export-content">
         <div class="export-icon">📄</div>
         <div class="export-info">
-          <h3>Gerar Relatório</h3>
-          <p>Baixe um relatório completo com todas as informações</p>
+          <h3>Gerar Relatório em PDF</h3>
+          <p>Baixe um relatório completo e profissional</p>
         </div>
       </div>
-      <button @click="gerarPDF" class="btn-export">
-        <span>📥</span>
-        Baixar Relatório
+      <button @click="gerarPDF" class="btn-export" :disabled="gerandoPDF">
+        <span v-if="!gerandoPDF">📥 Baixar PDF</span>
+        <span v-else>⏳ Gerando...</span>
       </button>
     </div>
 
@@ -164,6 +164,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useMachineStore } from '../stores/machineStore';
 import { useMaintenanceStore } from '../stores/maintenanceStore';
+import jsPDF from 'jspdf';
 
 export default {
   name: 'Relatorios',
@@ -173,6 +174,7 @@ export default {
     const maintenanceStore = useMaintenanceStore();
     const carregando = ref(false);
     const erro = ref('');
+    const gerandoPDF = ref(false);
 
     const mediaPorMaquina = computed(() => {
       if (machineStore.totalMachines === 0) return '0';
@@ -218,67 +220,230 @@ export default {
       return new Date(data).toLocaleDateString('pt-BR');
     };
 
-    const gerarPDF = () => {
-      if (!confirm('📥 Gerar relatório em formato de texto?\n\nO arquivo será baixado automaticamente.')) {
+    const gerarPDF = async () => {
+      if (!confirm('📥 Gerar relatório em PDF?\n\nO arquivo será baixado automaticamente.')) {
         return;
       }
 
-      let conteudo = '═══════════════════════════════════════════════\n';
-      conteudo += '       RELATÓRIO DE MANUTENÇÃO PREVENTIVA\n';
-      conteudo += '═══════════════════════════════════════════════\n\n';
-      conteudo += `📅 Data de Geração: ${new Date().toLocaleString('pt-BR')}\n\n`;
-      
-      conteudo += '───────────────────────────────────────────────\n';
-      conteudo += '📊 RESUMO GERAL\n';
-      conteudo += '───────────────────────────────────────────────\n';
-      conteudo += `🏭 Total de Máquinas: ${machineStore.totalMachines}\n`;
-      conteudo += `🔧 Total de Manutenções: ${maintenanceStore.totalMaintenances}\n`;
-      conteudo += `📈 Média por Máquina: ${mediaPorMaquina.value}\n`;
-      conteudo += `⚠️  Manutenções Atrasadas: ${machineStore.overdueMachines.length}\n\n`;
-      
-      conteudo += '───────────────────────────────────────────────\n';
-      conteudo += '🔧 MANUTENÇÕES POR TIPO\n';
-      conteudo += '───────────────────────────────────────────────\n';
-      Object.entries(maintenanceStore.countByType).forEach(([tipo, count]) => {
-        const porcentagem = ((count / maintenanceStore.totalMaintenances) * 100).toFixed(1);
-        conteudo += `${tipo}: ${count} (${porcentagem}%)\n`;
-      });
-      conteudo += '\n';
-      
-      if (machineStore.overdueMachines.length > 0) {
-        conteudo += '───────────────────────────────────────────────\n';
-        conteudo += '⚠️  MÁQUINAS COM MANUTENÇÃO ATRASADA\n';
-        conteudo += '───────────────────────────────────────────────\n';
-        machineStore.overdueMachines.forEach((maquina, index) => {
-          conteudo += `${index + 1}. ${maquina.nome}\n`;
-          conteudo += `   Prevista para: ${formatarData(maquina.proximaManutencao)}\n`;
-        });
-        conteudo += '\n';
-      }
-      
-      if (maintenanceStore.recentMaintenances.length > 0) {
-        conteudo += '───────────────────────────────────────────────\n';
-        conteudo += '🕒 MANUTENÇÕES RECENTES (30 DIAS)\n';
-        conteudo += '───────────────────────────────────────────────\n';
-        maintenanceStore.recentMaintenances.forEach((m, index) => {
-          conteudo += `${index + 1}. ${formatarData(m.data)} - ${m.maquina} (${m.tipo})\n`;
-          if (m.tecnico) conteudo += `   Técnico: ${m.tecnico}\n`;
-        });
-      }
-      
-      conteudo += '\n═══════════════════════════════════════════════\n';
-      conteudo += 'Fim do Relatório\n';
-      conteudo += '═══════════════════════════════════════════════\n';
+      gerandoPDF.value = true;
 
-      const blob = new Blob([conteudo], { type: 'text/plain;charset=utf-8' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `relatorio_manutencao_${new Date().getTime()}.txt`;
-      a.click();
-      window.URL.revokeObjectURL(url);
+      try {
+        const doc = new jsPDF();
+        let yPos = 20;
 
-      alert('✅ Relatório baixado com sucesso!');
+        // ========================================
+        // CABEÇALHO
+        // ========================================
+        doc.setFillColor(102, 126, 234);
+        doc.rect(0, 0, 210, 40, 'F');
+        
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(24);
+        doc.setFont(undefined, 'bold');
+        doc.text('RELATÓRIO DE MANUTENÇÃO', 105, 20, { align: 'center' });
+        
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        doc.text(`Data: ${new Date().toLocaleString('pt-BR')}`, 105, 30, { align: 'center' });
+
+        yPos = 55;
+
+        // ========================================
+        // RESUMO GERAL
+        // ========================================
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(16);
+        doc.setFont(undefined, 'bold');
+        doc.text('RESUMO GERAL', 14, yPos);
+        
+        yPos += 10;
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+
+        // Box do resumo
+        doc.setFillColor(240, 240, 240);
+        doc.roundedRect(14, yPos, 182, 30, 3, 3, 'F');
+        
+        yPos += 8;
+        doc.text(`Máquinas Cadastradas: ${machineStore.totalMachines}`, 20, yPos);
+        yPos += 7;
+        doc.text(`Manutenções Realizadas: ${maintenanceStore.totalMaintenances}`, 20, yPos);
+        yPos += 7;
+        doc.text(`Média por Máquina: ${mediaPorMaquina.value}`, 20, yPos);
+        yPos += 7;
+        doc.setTextColor(239, 68, 68);
+        doc.setFont(undefined, 'bold');
+        doc.text(`Manutenções Atrasadas: ${machineStore.overdueMachines.length}`, 20, yPos);
+
+        yPos += 15;
+
+        // ========================================
+        // MANUTENÇÕES POR TIPO
+        // ========================================
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(16);
+        doc.setFont(undefined, 'bold');
+        doc.text('MANUTENÇÕES POR TIPO', 14, yPos);
+        
+        yPos += 10;
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+
+        Object.entries(maintenanceStore.countByType).forEach(([tipo, count]) => {
+          const porcentagem = ((count / maintenanceStore.totalMaintenances) * 100).toFixed(1);
+          
+          // Cor de fundo conforme tipo
+          if (tipo === 'Preventiva') {
+            doc.setFillColor(209, 250, 229);
+            doc.setTextColor(6, 95, 70);
+          } else if (tipo === 'Corretiva') {
+            doc.setFillColor(254, 226, 226);
+            doc.setTextColor(153, 27, 27);
+          } else if (tipo === 'Preditiva') {
+            doc.setFillColor(219, 234, 254);
+            doc.setTextColor(30, 64, 175);
+          }
+
+          doc.roundedRect(14, yPos - 5, 60, 8, 2, 2, 'F');
+          doc.setFont(undefined, 'bold');
+          doc.text(tipo, 16, yPos);
+          
+          doc.setTextColor(0, 0, 0);
+          doc.setFont(undefined, 'normal');
+          doc.text(`${count} (${porcentagem}%)`, 80, yPos);
+          
+          yPos += 10;
+        });
+
+        yPos += 5;
+
+        // ========================================
+        // MÁQUINAS ATRASADAS
+        // ========================================
+        if (machineStore.overdueMachines.length > 0) {
+          if (yPos > 250) {
+            doc.addPage();
+            yPos = 20;
+          }
+
+          doc.setTextColor(0, 0, 0);
+          doc.setFontSize(16);
+          doc.setFont(undefined, 'bold');
+          doc.text('ATENÇÃO: MANUTENÇÕES ATRASADAS', 14, yPos);
+          
+          yPos += 10;
+          doc.setFontSize(10);
+
+          machineStore.overdueMachines.forEach((maquina, index) => {
+            if (yPos > 270) {
+              doc.addPage();
+              yPos = 20;
+            }
+
+            doc.setFillColor(254, 226, 226);
+            doc.roundedRect(14, yPos - 5, 182, 12, 2, 2, 'F');
+            
+            doc.setTextColor(153, 27, 27);
+            doc.setFont(undefined, 'bold');
+            doc.text(`${index + 1}. ${maquina.nome}`, 20, yPos);
+            
+            yPos += 5;
+            doc.setFont(undefined, 'normal');
+            doc.text(`Prevista: ${formatarData(maquina.proximaManutencao)}`, 25, yPos);
+            
+            yPos += 10;
+          });
+
+          yPos += 5;
+        }
+
+        // ========================================
+        // MANUTENÇÕES RECENTES
+        // ========================================
+        if (maintenanceStore.recentMaintenances.length > 0) {
+          if (yPos > 230) {
+            doc.addPage();
+            yPos = 20;
+          }
+
+          doc.setTextColor(0, 0, 0);
+          doc.setFontSize(16);
+          doc.setFont(undefined, 'bold');
+          doc.text('MANUTENÇÕES RECENTES (30 DIAS)', 14, yPos);
+          
+          yPos += 10;
+          doc.setFontSize(9);
+
+          maintenanceStore.recentMaintenances.slice(0, 10).forEach((m, index) => {
+            if (yPos > 275) {
+              doc.addPage();
+              yPos = 20;
+            }
+
+            doc.setFont(undefined, 'bold');
+            doc.setTextColor(102, 126, 234);
+            doc.text(`${formatarData(m.data)}`, 20, yPos);
+            
+            doc.setTextColor(0, 0, 0);
+            doc.setFont(undefined, 'normal');
+            doc.text(`${m.maquina}`, 50, yPos);
+            
+            // Badge do tipo
+            if (m.tipo === 'Preventiva') {
+              doc.setFillColor(209, 250, 229);
+              doc.setTextColor(6, 95, 70);
+            } else if (m.tipo === 'Corretiva') {
+              doc.setFillColor(254, 226, 226);
+              doc.setTextColor(153, 27, 27);
+            } else if (m.tipo === 'Preditiva') {
+              doc.setFillColor(219, 234, 254);
+              doc.setTextColor(30, 64, 175);
+            }
+            
+            doc.roundedRect(140, yPos - 3, 25, 5, 1, 1, 'F');
+            doc.setFont(undefined, 'bold');
+            doc.text(m.tipo, 152.5, yPos, { align: 'center' });
+            
+            if (m.tecnico) {
+              doc.setTextColor(107, 114, 128);
+              doc.setFont(undefined, 'normal');
+              doc.setFontSize(8);
+              doc.text(`Técnico: ${m.tecnico}`, 25, yPos + 4);
+              yPos += 4;
+            }
+            
+            yPos += 8;
+            doc.setFontSize(9);
+          });
+        }
+
+        // ========================================
+        // RODAPÉ
+        // ========================================
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+          doc.setPage(i);
+          doc.setFontSize(8);
+          doc.setTextColor(150, 150, 150);
+          doc.text(
+            `Página ${i} de ${pageCount}`,
+            105,
+            290,
+            { align: 'center' }
+          );
+        }
+
+        // Salvar PDF
+        doc.save(`relatorio_manutencao_${new Date().getTime()}.pdf`);
+        
+        alert('✅ Relatório PDF gerado com sucesso!');
+
+      } catch (error) {
+        console.error('Erro ao gerar PDF:', error);
+        alert('❌ Erro ao gerar PDF: ' + error.message);
+      } finally {
+        gerandoPDF.value = false;
+      }
     };
 
     onMounted(() => {
@@ -290,6 +455,7 @@ export default {
       maintenanceStore,
       carregando,
       erro,
+      gerandoPDF,
       mediaPorMaquina,
       maxManutencoes,
       getCorTipo,
@@ -632,9 +798,14 @@ export default {
   white-space: nowrap;
 }
 
-.btn-export:hover {
+.btn-export:hover:not(:disabled) {
   transform: translateY(-3px);
   box-shadow: 0 8px 20px rgba(102, 126, 234, 0.5);
+}
+
+.btn-export:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 @keyframes fadeInUp {
