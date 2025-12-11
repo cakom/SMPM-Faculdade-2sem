@@ -1,167 +1,209 @@
-<!--
-  Manutencoes.vue - USANDO PINIA STORE
--->
-
 <template>
-  <div>
+  <div class="manutencoes-page">
     
-    <!-- Título -->
-    <div class="card">
-      <h2>🔧 Manutenções Realizadas</h2>
-      <p>Registre e acompanhe o histórico de manutenções</p>
-    </div>
-
-    <!-- Estatísticas rápidas -->
-    <div class="stats-container">
-      <div class="stat-box">
-        <span class="stat-number">{{ maintenanceStore.totalMaintenances }}</span>
-        <span class="stat-label">Total de Manutenções</span>
+    <!-- Header -->
+    <div class="page-header">
+      <div class="header-content">
+        <h1 class="page-title">
+          <span class="title-icon">🔧</span>
+          Manutenções Realizadas
+        </h1>
+        <p class="page-subtitle">Registre e acompanhe o histórico de manutenções</p>
       </div>
-      <div class="stat-box">
-        <span class="stat-number">{{ maintenanceStore.recentMaintenances.length }}</span>
-        <span class="stat-label">Últimos 30 dias</span>
-      </div>
-    </div>
-
-    <!-- Botão para adicionar -->
-    <div style="margin-bottom: 20px;">
-      <button @click="mostrarFormulario = !mostrarFormulario" class="btn btn-success">
-        ➕ Registrar Manutenção
+      <button @click="mostrarFormulario = !mostrarFormulario" class="btn-add">
+        <span>➕</span>
+        Registrar Manutenção
       </button>
     </div>
 
-    <!-- Mensagens -->
-    <div v-if="maintenanceStore.error" class="alert alert-danger">
-      {{ maintenanceStore.error }}
+    <!-- Estatísticas -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">📊</div>
+        <div class="stat-info">
+          <h3>{{ maintenanceStore.totalMaintenances }}</h3>
+          <p>Total de Manutenções</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📅</div>
+        <div class="stat-info">
+          <h3>{{ maintenanceStore.recentMaintenances.length }}</h3>
+          <p>Últimos 30 dias</p>
+        </div>
+      </div>
     </div>
-    <div v-if="sucesso" class="alert alert-success">{{ sucesso }}</div>
+
+    <!-- Alertas -->
+    <div v-if="maintenanceStore.error" class="alert alert-error">
+      <span class="alert-icon">⚠️</span>
+      {{ maintenanceStore.error }}
+      <button @click="maintenanceStore.clearError()" class="alert-close">✕</button>
+    </div>
+    
+    <div v-if="sucesso" class="alert alert-success">
+      <span class="alert-icon">✅</span>
+      {{ sucesso }}
+    </div>
 
     <!-- Formulário -->
-    <div v-if="mostrarFormulario" class="card">
-      <h3>Nova Manutenção</h3>
+    <div v-if="mostrarFormulario" class="form-card">
+      <div class="form-header">
+        <h3>Nova Manutenção</h3>
+        <button @click="cancelarFormulario" class="btn-close">✕</button>
+      </div>
       
-      <div class="form-group">
-        <label>Máquina:</label>
-        <input 
-          v-model="novaManutencao.maquina" 
-          type="text" 
-          placeholder="Ex: Torno Mecânico 01"
-        >
-      </div>
+      <form @submit.prevent="adicionarManutencao" class="form">
+        
+        <div class="input-group">
+          <label class="input-label">
+            <span class="label-icon">🏭</span>
+            Máquina
+          </label>
+          <input 
+            v-model="novaManutencao.maquina" 
+            type="text" 
+            class="input-field"
+            placeholder="Ex: Torno Mecânico 01"
+          >
+        </div>
 
-      <div class="form-group">
-        <label>Data da Manutenção:</label>
-        <input 
-          v-model="novaManutencao.data" 
-          type="date"
-        >
-      </div>
+        <div class="input-group">
+          <label class="input-label">
+            <span class="label-icon">📅</span>
+            Data da Manutenção
+          </label>
+          <input 
+            v-model="novaManutencao.data" 
+            type="date"
+            class="input-field"
+          >
+        </div>
 
-      <div class="form-group">
-        <label>Tipo de Manutenção:</label>
-        <select v-model="novaManutencao.tipo">
-          <option value="">Selecione...</option>
-          <option value="Preventiva">Preventiva</option>
-          <option value="Corretiva">Corretiva</option>
-          <option value="Preditiva">Preditiva</option>
-        </select>
-      </div>
+        <div class="input-group">
+          <label class="input-label">
+            <span class="label-icon">🔧</span>
+            Tipo de Manutenção
+          </label>
+          <select v-model="novaManutencao.tipo" class="input-field">
+            <option value="">Selecione...</option>
+            <option value="Preventiva">Preventiva</option>
+            <option value="Corretiva">Corretiva</option>
+            <option value="Preditiva">Preditiva</option>
+          </select>
+        </div>
 
-      <div class="form-group">
-        <label>Descrição:</label>
-        <textarea 
-          v-model="novaManutencao.descricao" 
-          rows="4"
-          placeholder="Descreva o que foi feito..."
-        ></textarea>
-      </div>
+        <div class="input-group">
+          <label class="input-label">
+            <span class="label-icon">📝</span>
+            Descrição
+          </label>
+          <textarea 
+            v-model="novaManutencao.descricao" 
+            rows="4"
+            class="input-field"
+            placeholder="Descreva o que foi feito..."
+          ></textarea>
+        </div>
 
-      <div class="form-group">
-        <label>Técnico Responsável:</label>
-        <input 
-          v-model="novaManutencao.tecnico" 
-          type="text" 
-          placeholder="Nome do técnico"
-        >
-      </div>
+        <div class="input-group">
+          <label class="input-label">
+            <span class="label-icon">👨‍🔧</span>
+            Técnico Responsável
+          </label>
+          <input 
+            v-model="novaManutencao.tecnico" 
+            type="text" 
+            class="input-field"
+            placeholder="Nome do técnico"
+          >
+        </div>
 
-      <button 
-        @click="adicionarManutencao" 
-        class="btn btn-success"
-        :disabled="maintenanceStore.loading"
-      >
-        {{ maintenanceStore.loading ? '⏳ Salvando...' : '✅ Salvar' }}
-      </button>
-      <button 
-        @click="cancelarFormulario" 
-        class="btn btn-danger" 
-        style="margin-left: 10px;"
-      >
-        ❌ Cancelar
-      </button>
+        <div class="form-actions">
+          <button 
+            type="submit" 
+            class="btn-submit" 
+            :disabled="maintenanceStore.loading"
+          >
+            <span v-if="!maintenanceStore.loading">✅ Salvar</span>
+            <span v-else>⏳ Salvando...</span>
+          </button>
+          <button 
+            type="button"
+            @click="cancelarFormulario" 
+            class="btn-cancel"
+          >
+            ❌ Cancelar
+          </button>
+        </div>
+      </form>
     </div>
 
     <!-- Loading -->
-    <div v-if="maintenanceStore.loading && !mostrarFormulario" class="card">
-      <p style="text-align: center;">⏳ Carregando manutenções...</p>
+    <div v-if="maintenanceStore.loading && !mostrarFormulario" class="loading-card">
+      <div class="spinner"></div>
+      <p>⏳ Carregando manutenções...</p>
     </div>
 
     <!-- Lista vazia -->
-    <div v-else-if="maintenanceStore.maintenances.length === 0" class="card">
-      <p style="text-align: center; color: #999;">
-        📭 Nenhuma manutenção registrada ainda.
-      </p>
+    <div v-else-if="maintenanceStore.maintenances.length === 0" class="empty-card">
+      <span class="empty-icon">📭</span>
+      <p>Nenhuma manutenção registrada ainda.</p>
+      <button @click="mostrarFormulario = true" class="btn-add-empty">
+        ➕ Registrar Primeira Manutenção
+      </button>
     </div>
 
-    <!-- Lista de manutenções (ordenadas por data) -->
-    <div v-else>
+    <!-- Lista de manutenções -->
+    <div v-else class="maintenances-grid">
       <div 
         v-for="manutencao in maintenanceStore.maintenancesByDate" 
         :key="manutencao._id" 
-        class="card manutencao-card"
+        class="maintenance-card"
+        :class="getTypeClass(manutencao.tipo)"
       >
         
-        <!-- Cabeçalho -->
-        <div style="display: flex; justify-content: space-between; align-items: start;">
-          <div>
-            <h3>{{ manutencao.maquina }}</h3>
-            <p style="color: #666;">
-              📅 {{ formatarData(manutencao.data) }} | 
+        <div class="maintenance-header">
+          <div class="maintenance-info">
+            <h3 class="maintenance-machine">{{ manutencao.maquina }}</h3>
+            <div class="maintenance-meta">
+              <span class="meta-date">📅 {{ formatarData(manutencao.data) }}</span>
               <span :class="'badge badge-' + manutencao.tipo.toLowerCase()">
                 {{ manutencao.tipo }}
               </span>
-            </p>
+            </div>
           </div>
           <button 
-            @click="removerManutencao(manutencao._id)" 
-            class="btn btn-danger"
-            :disabled="maintenanceStore.loading"
+            @click="confirmarRemocao(manutencao._id, manutencao.maquina)" 
+            class="btn-delete"
+            title="Remover manutenção"
           >
             🗑️
           </button>
         </div>
 
-        <!-- Descrição -->
-        <div style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+        <div class="maintenance-body">
           <strong>Descrição:</strong>
-          <p style="margin-top: 5px;">{{ manutencao.descricao || 'Sem descrição' }}</p>
-          <small style="color: #666;">👨‍🔧 Técnico: {{ manutencao.tecnico }}</small>
+          <p>{{ manutencao.descricao || 'Sem descrição' }}</p>
+          <div class="maintenance-footer">
+            <span>👨‍🔧 {{ manutencao.tecnico }}</span>
+          </div>
         </div>
 
       </div>
     </div>
 
     <!-- Resumo por tipo -->
-    <div v-if="maintenanceStore.maintenances.length > 0" class="card">
+    <div v-if="maintenanceStore.maintenances.length > 0" class="summary-card">
       <h3>📊 Resumo por Tipo</h3>
-      <div class="tipo-resumo">
+      <div class="summary-grid">
         <div 
           v-for="(count, tipo) in maintenanceStore.countByType" 
           :key="tipo"
-          class="tipo-item"
+          class="summary-item"
         >
           <span :class="'badge badge-' + tipo.toLowerCase()">{{ tipo }}</span>
-          <span class="tipo-count">{{ count }}</span>
+          <span class="summary-count">{{ count }}</span>
         </div>
       </div>
     </div>
@@ -171,17 +213,13 @@
 
 <script>
 import { ref, onMounted } from 'vue';
-import { useMaintenanceStore } from '../stores/maintenanceStore'; // Importa a store
+import { useMaintenanceStore } from '../stores/maintenanceStore';
 
 export default {
   name: 'Manutencoes',
   
   setup() {
-    // ===== PINIA STORE =====
-    // Acessa a store de manutenções (estado global)
     const maintenanceStore = useMaintenanceStore();
-    
-    // ===== ESTADO LOCAL =====
     const mostrarFormulario = ref(false);
     const sucesso = ref('');
     
@@ -193,207 +231,358 @@ export default {
       tecnico: ''
     });
 
-    // ===== MÉTODOS =====
-
-    /**
-     * Adiciona nova manutenção usando a store
-     */
     const adicionarManutencao = async () => {
-      // Validação básica
       if (!novaManutencao.value.maquina || !novaManutencao.value.data) {
         maintenanceStore.error = '⚠️ Preencha pelo menos a máquina e a data!';
         return;
       }
 
       try {
-        // Chama action da store
         await maintenanceStore.addMaintenance(novaManutencao.value);
-        
-        // Sucesso!
         sucesso.value = '✅ Manutenção registrada com sucesso!';
         setTimeout(() => sucesso.value = '', 3000);
-        
-        // Limpa formulário
-        novaManutencao.value = {
-          maquina: '',
-          data: '',
-          tipo: '',
-          descricao: '',
-          tecnico: ''
-        };
-        
+        novaManutencao.value = { maquina: '', data: '', tipo: '', descricao: '', tecnico: '' };
         mostrarFormulario.value = false;
-        
       } catch (error) {
-        // Erro já está em maintenanceStore.error
         console.error('Erro ao adicionar:', error);
       }
     };
 
-    /**
-     * Remove manutenção usando a store
-     */
+    const confirmarRemocao = (id, maquina) => {
+      if (confirm(`❌ Tem certeza que deseja remover a manutenção da máquina "${maquina}"?\n\nEsta ação não pode ser desfeita.`)) {
+        removerManutencao(id);
+      }
+    };
+
     const removerManutencao = async (id) => {
-      if (!confirm('Remover esta manutenção?')) return;
-      
       try {
-        // Chama action da store
         await maintenanceStore.deleteMaintenance(id);
-        
         sucesso.value = '🗑️ Manutenção removida!';
         setTimeout(() => sucesso.value = '', 3000);
-        
       } catch (error) {
         console.error('Erro ao remover:', error);
       }
     };
 
-    /**
-     * Cancela formulário e limpa erros
-     */
     const cancelarFormulario = () => {
-      mostrarFormulario.value = false;
-      maintenanceStore.clearError();
-      novaManutencao.value = {
-        maquina: '',
-        data: '',
-        tipo: '',
-        descricao: '',
-        tecnico: ''
-      };
+      const temDados = novaManutencao.value.maquina || novaManutencao.value.data || 
+                       novaManutencao.value.tipo || novaManutencao.value.descricao;
+      
+      if (temDados) {
+        if (confirm('❌ Descartar alterações?\n\nTodos os dados preenchidos serão perdidos.')) {
+          mostrarFormulario.value = false;
+          maintenanceStore.clearError();
+          novaManutencao.value = { maquina: '', data: '', tipo: '', descricao: '', tecnico: '' };
+        }
+      } else {
+        mostrarFormulario.value = false;
+        maintenanceStore.clearError();
+      }
     };
 
-    /**
-     * Formata data para exibição
-     */
     const formatarData = (data) => {
       if (!data) return '';
-      const dataObj = new Date(data);
-      return dataObj.toLocaleDateString('pt-BR');
+      return new Date(data).toLocaleDateString('pt-BR');
     };
 
-    // ===== LIFECYCLE =====
-    
-    /**
-     * Quando monta, carrega as manutenções se a store estiver vazia
-     */
+    const getTypeClass = (tipo) => {
+      const classes = {
+        'Preventiva': 'card-preventiva',
+        'Corretiva': 'card-corretiva',
+        'Preditiva': 'card-preditiva'
+      };
+      return classes[tipo] || '';
+    };
+
     onMounted(async () => {
       if (maintenanceStore.maintenances.length === 0) {
         await maintenanceStore.fetchMaintenances();
       }
     });
 
-    // ===== RETORNO =====
     return {
-      maintenanceStore,    // Expõe a store para o template
+      maintenanceStore,
       mostrarFormulario,
       novaManutencao,
       sucesso,
       adicionarManutencao,
-      removerManutencao,
+      confirmarRemocao,
       cancelarFormulario,
-      formatarData
+      formatarData,
+      getTypeClass
     };
   }
 };
 </script>
 
 <style scoped>
-/* Estatísticas rápidas */
-.stats-container {
+@import '../style.css';
+
+.manutencoes-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* Reusa mesmos estilos de Maquinas.vue */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.header-content h1 {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.title-icon {
+  font-size: 2.5rem;
+}
+
+.page-subtitle {
+  color: #6b7280;
+  font-size: 1.1rem;
+}
+
+.btn-add {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.5rem;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+  font-size: 1rem;
+}
+
+.btn-add:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.5);
+}
+
+/* Estatísticas */
+.stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 15px;
-  margin-bottom: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
 }
 
-.stat-box {
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  text-align: center;
-  border-left: 4px solid #51cf66;
+.stat-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  border-left: 4px solid #10b981;
+  animation: fadeInUp 0.5s ease-out;
 }
 
-.stat-number {
-  display: block;
-  font-size: 32px;
+.stat-icon {
+  font-size: 3rem;
+}
+
+.stat-info h3 {
+  font-size: 2rem;
   font-weight: 700;
-  color: #51cf66;
-  margin-bottom: 5px;
+  color: #10b981;
+  margin-bottom: 0.25rem;
 }
 
-.stat-label {
-  display: block;
-  color: #666;
-  font-size: 14px;
+.stat-info p {
+  color: #6b7280;
+  font-size: 0.9rem;
 }
 
-/* Card de manutenção */
-.manutencao-card {
-  border-left: 4px solid #51cf66;
-  transition: transform 0.2s;
+/* Cards de Manutenções */
+.maintenances-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5rem;
 }
 
-.manutencao-card:hover {
+.maintenance-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  border-left: 4px solid #10b981;
+  transition: all 0.3s ease;
+  animation: fadeInUp 0.5s ease-out;
+  animation-fill-mode: both;
+}
+
+.maintenance-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
 }
 
-/* Badges coloridos para tipo de manutenção */
+.maintenance-card.card-preventiva {
+  border-left-color: #10b981;
+}
+
+.maintenance-card.card-corretiva {
+  border-left-color: #ef4444;
+}
+
+.maintenance-card.card-preditiva {
+  border-left-color: #3b82f6;
+}
+
+.maintenance-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 1rem;
+}
+
+.maintenance-machine {
+  font-size: 1.25rem;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+}
+
+.maintenance-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.meta-date {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
 .badge {
-  padding: 4px 12px;
+  padding: 0.375rem 0.75rem;
   border-radius: 12px;
-  font-size: 12px;
+  font-size: 0.85rem;
   font-weight: 600;
 }
 
 .badge-preventiva {
-  background: #d3f9d8;
-  color: #2b8a3e;
+  background: #d1fae5;
+  color: #065f46;
 }
 
 .badge-corretiva {
-  background: #ffe3e3;
-  color: #c92a2a;
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 .badge-preditiva {
-  background: #d0ebff;
-  color: #1971c2;
+  background: #dbeafe;
+  color: #1e40af;
 }
 
-/* Resumo por tipo */
-.tipo-resumo {
+.btn-delete {
+  background: #fee2e2;
+  border: none;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1.25rem;
+  transition: all 0.2s;
+}
+
+.btn-delete:hover {
+  background: #ef4444;
+  transform: scale(1.1);
+}
+
+.maintenance-body {
+  background: #f9fafb;
+  padding: 1rem;
+  border-radius: 12px;
+}
+
+.maintenance-body strong {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #374151;
+  font-size: 0.9rem;
+}
+
+.maintenance-body p {
+  color: #6b7280;
+  line-height: 1.6;
+  margin-bottom: 0.75rem;
+}
+
+.maintenance-footer {
+  padding-top: 0.75rem;
+  border-top: 1px solid #e5e7eb;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+/* Resumo */
+.summary-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  margin-top: 2rem;
+}
+
+.summary-card h3 {
+  margin-bottom: 1rem;
+  color: #1f2937;
+}
+
+.summary-grid {
   display: flex;
-  gap: 15px;
+  gap: 1rem;
   flex-wrap: wrap;
-  margin-top: 15px;
 }
 
-.tipo-item {
+.summary-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 15px;
-  background: #f8f9fa;
-  border-radius: 8px;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: #f9fafb;
+  border-radius: 12px;
 }
 
-.tipo-count {
-  font-size: 20px;
+.summary-count {
+  font-size: 1.5rem;
   font-weight: 700;
   color: #667eea;
 }
 
-h2 {
-  color: #333;
-  margin-bottom: 10px;
-}
-
-h3 {
-  color: #51cf66;
-  margin-bottom: 5px;
+@media (max-width: 768px) {
+  .maintenances-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .btn-add {
+    width: 100%;
+    justify-content: center;
+  }
 }
 </style>
