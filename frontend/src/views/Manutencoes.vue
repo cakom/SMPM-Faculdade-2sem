@@ -1,355 +1,415 @@
 <template>
-  <div class="manutencoes-page">
-    
+  <div class="manutencoes-container">
     <!-- Header -->
     <div class="page-header">
       <div class="header-content">
-        <h1 class="page-title">
-          <span class="title-icon">🔧</span>
-          Manutenções Realizadas
-        </h1>
-        <p class="page-subtitle">Registre e acompanhe o histórico de manutenções</p>
+        <div class="header-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="12" cy="12" r="3" stroke-width="2"/>
+            <path d="M12 1v6m0 6v6m5.196-14.196l-4.242 4.242M12 12l-4.242 4.242M23 12h-6m-6 0H1m14.196 5.196l-4.242-4.242M12 12l-4.242-4.242" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="page-title">Manutenções</h1>
+          <p class="page-subtitle">Histórico e agendamento</p>
+        </div>
       </div>
       <button @click="mostrarFormulario = !mostrarFormulario" class="btn-add">
-        <span>➕</span>
-        Registrar Manutenção
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <line x1="12" y1="5" x2="12" y2="19" stroke-width="2" stroke-linecap="round"/>
+          <line x1="5" y1="12" x2="19" y2="12" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        {{ mostrarFormulario ? 'Cancelar' : 'Nova Manutenção' }}
       </button>
     </div>
 
-    <!-- Estatísticas -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon">📊</div>
-        <div class="stat-info">
-          <h3>{{ maintenanceStore.totalMaintenances }}</h3>
-          <p>Total de Manutenções</p>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon">📅</div>
-        <div class="stat-info">
-          <h3>{{ maintenanceStore.recentMaintenances.length }}</h3>
-          <p>Últimos 30 dias</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Alertas -->
-    <div v-if="maintenanceStore.error" class="alert alert-error">
-      <span class="alert-icon">⚠️</span>
-      {{ maintenanceStore.error }}
-      <button @click="maintenanceStore.clearError()" class="alert-close">✕</button>
-    </div>
-    
-    <div v-if="sucesso" class="alert alert-success">
-      <span class="alert-icon">✅</span>
-      {{ sucesso }}
+    <!-- Alert -->
+    <div v-if="alerta" :class="['alert', alerta.tipo]">
+      <svg v-if="alerta.tipo === 'sucesso'" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <polyline points="22 4 12 14.01 9 11.01" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <circle cx="12" cy="12" r="10" stroke-width="2"/>
+        <line x1="15" y1="9" x2="9" y2="15" stroke-width="2" stroke-linecap="round"/>
+        <line x1="9" y1="9" x2="15" y2="15" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <span>{{ alerta.texto }}</span>
     </div>
 
     <!-- Formulário -->
     <div v-if="mostrarFormulario" class="form-card">
       <div class="form-header">
-        <h3>Nova Manutenção</h3>
-        <button @click="cancelarFormulario" class="btn-close">✕</button>
+        <h3 class="form-title">{{ editando ? 'Editar Manutenção' : 'Nova Manutenção' }}</h3>
       </div>
       
-      <form @submit.prevent="adicionarManutencao" class="form">
-        
-        <div class="input-group">
-          <label class="input-label">
-            <span class="label-icon">🏭</span>
-            Máquina
-          </label>
-          <input 
-            v-model="novaManutencao.maquina" 
-            type="text" 
-            class="input-field"
-            placeholder="Ex: Torno Mecânico 01"
-          >
+      <form @submit.prevent="salvarManutencao" class="form">
+        <div class="form-row">
+          <div class="input-group">
+            <label class="label">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke-width="2"/>
+                <line x1="3" y1="9" x2="21" y2="9" stroke-width="2"/>
+              </svg>
+              Máquina
+            </label>
+            <select v-model="formulario.maquina" class="input" required>
+              <option value="">Selecione uma máquina</option>
+              <option v-for="maquina in maquinas" :key="maquina._id" :value="maquina._id">
+                {{ maquina.nome }}
+              </option>
+            </select>
+          </div>
+
+          <div class="input-group">
+            <label class="label">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke-width="2"/>
+                <line x1="16" y1="2" x2="16" y2="6" stroke-width="2" stroke-linecap="round"/>
+                <line x1="8" y1="2" x2="8" y2="6" stroke-width="2" stroke-linecap="round"/>
+                <line x1="3" y1="10" x2="21" y2="10" stroke-width="2"/>
+              </svg>
+              Data
+            </label>
+            <input
+              v-model="formulario.data"
+              type="date"
+              class="input"
+              required
+            />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="input-group">
+            <label class="label">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M20 7h-9M14 17H5M17 17l3-3-3-3M7 7L4 4l3-3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Tipo
+            </label>
+            <select v-model="formulario.tipo" class="input" required>
+              <option value="">Selecione o tipo</option>
+              <option value="Preventiva">Preventiva</option>
+              <option value="Corretiva">Corretiva</option>
+              <option value="Preditiva">Preditiva</option>
+            </select>
+          </div>
+
+          <div class="input-group">
+            <label class="label">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="12" cy="7" r="4" stroke-width="2"/>
+              </svg>
+              Técnico Responsável
+            </label>
+            <input
+              v-model="formulario.tecnico"
+              type="text"
+              placeholder="Ex: João Silva"
+              class="input"
+              required
+            />
+          </div>
         </div>
 
         <div class="input-group">
-          <label class="input-label">
-            <span class="label-icon">📅</span>
-            Data da Manutenção
-          </label>
-          <input 
-            v-model="novaManutencao.data" 
-            type="date"
-            class="input-field"
-          >
-        </div>
-
-        <div class="input-group">
-          <label class="input-label">
-            <span class="label-icon">🔧</span>
-            Tipo de Manutenção
-          </label>
-          <select v-model="novaManutencao.tipo" class="input-field">
-            <option value="">Selecione...</option>
-            <option value="Preventiva">Preventiva</option>
-            <option value="Corretiva">Corretiva</option>
-            <option value="Preditiva">Preditiva</option>
-          </select>
-        </div>
-
-        <div class="input-group">
-          <label class="input-label">
-            <span class="label-icon">📝</span>
+          <label class="label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <polyline points="14 2 14 8 20 8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <line x1="16" y1="13" x2="8" y2="13" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <line x1="16" y1="17" x2="8" y2="17" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <polyline points="10 9 9 9 8 9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
             Descrição
           </label>
-          <textarea 
-            v-model="novaManutencao.descricao" 
+          <textarea
+            v-model="formulario.descricao"
+            placeholder="Descreva os procedimentos realizados..."
+            class="textarea"
             rows="4"
-            class="input-field"
-            placeholder="Descreva o que foi feito..."
+            required
           ></textarea>
         </div>
 
-        <div class="input-group">
-          <label class="input-label">
-            <span class="label-icon">👨‍🔧</span>
-            Técnico Responsável
-          </label>
-          <input 
-            v-model="novaManutencao.tecnico" 
-            type="text" 
-            class="input-field"
-            placeholder="Nome do técnico"
-          >
-        </div>
-
         <div class="form-actions">
-          <button 
-            type="submit" 
-            class="btn-submit" 
-            :disabled="maintenanceStore.loading"
-          >
-            <span v-if="!maintenanceStore.loading">✅ Salvar</span>
-            <span v-else>⏳ Salvando...</span>
+          <button type="button" @click="cancelarEdicao" class="btn-cancel">
+            Cancelar
           </button>
-          <button 
-            type="button"
-            @click="cancelarFormulario" 
-            class="btn-cancel"
-          >
-            ❌ Cancelar
+          <button type="submit" class="btn-submit">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <polyline points="17 21 17 13 7 13 7 21" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <polyline points="7 3 7 8 15 8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            {{ editando ? 'Atualizar' : 'Salvar' }}
           </button>
         </div>
       </form>
     </div>
 
-    <!-- Loading -->
-    <div v-if="maintenanceStore.loading && !mostrarFormulario" class="loading-card">
-      <div class="spinner"></div>
-      <p>⏳ Carregando manutenções...</p>
-    </div>
-
-    <!-- Lista vazia -->
-    <div v-else-if="maintenanceStore.maintenances.length === 0" class="empty-card">
-      <span class="empty-icon">📭</span>
-      <p>Nenhuma manutenção registrada ainda.</p>
-      <button @click="mostrarFormulario = true" class="btn-add-empty">
-        ➕ Registrar Primeira Manutenção
+    <!-- Empty State -->
+    <div v-if="!manutencoes.length && !mostrarFormulario" class="empty-state">
+      <div class="empty-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <circle cx="12" cy="12" r="3" stroke-width="2"/>
+          <path d="M12 1v6m0 6v6m5.196-14.196l-4.242 4.242M12 12l-4.242 4.242M23 12h-6m-6 0H1m14.196 5.196l-4.242-4.242M12 12l-4.242-4.242" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <h3 class="empty-title">Nenhuma manutenção registrada</h3>
+      <p class="empty-text">Comece registrando a primeira manutenção do sistema</p>
+      <button @click="mostrarFormulario = true" class="btn-empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <line x1="12" y1="5" x2="12" y2="19" stroke-width="2" stroke-linecap="round"/>
+          <line x1="5" y1="12" x2="19" y2="12" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        Adicionar Primeira Manutenção
       </button>
     </div>
 
-    <!-- Lista de manutenções -->
-    <div v-else class="maintenances-grid">
-      <div 
-        v-for="manutencao in maintenanceStore.maintenancesByDate" 
-        :key="manutencao._id" 
-        class="maintenance-card"
-        :class="getTypeClass(manutencao.tipo)"
+    <!-- Lista de Manutenções -->
+    <div v-else class="manutencoes-grid">
+      <div
+        v-for="manutencao in manutencoes"
+        :key="manutencao._id"
+        :class="['manutencao-card', getTipoClass(manutencao.tipo)]"
       >
-        
-        <div class="maintenance-header">
-          <div class="maintenance-info">
-            <h3 class="maintenance-machine">{{ manutencao.maquina }}</h3>
-            <div class="maintenance-meta">
-              <span class="meta-date">📅 {{ formatarData(manutencao.data) }}</span>
-              <span :class="'badge badge-' + manutencao.tipo.toLowerCase()">
-                {{ manutencao.tipo }}
-              </span>
+        <!-- Card Header -->
+        <div class="card-header">
+          <div class="card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <circle cx="12" cy="12" r="3" stroke-width="2"/>
+              <path d="M12 1v6m0 6v6m5.196-14.196l-4.242 4.242M12 12l-4.242 4.242M23 12h-6m-6 0H1m14.196 5.196l-4.242-4.242M12 12l-4.242-4.242" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="card-status">
+            <span :class="['status-badge', getTipoClass(manutencao.tipo)]">
+              <svg viewBox="0 0 8 8" fill="currentColor">
+                <circle cx="4" cy="4" r="4"/>
+              </svg>
+              {{ manutencao.tipo }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Card Body -->
+        <div class="card-body">
+          <h3 class="card-title">{{ getNomeMaquina(manutencao.maquina) }}</h3>
+          
+          <div class="card-info">
+            <div class="info-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke-width="2"/>
+                <line x1="16" y1="2" x2="16" y2="6" stroke-width="2" stroke-linecap="round"/>
+                <line x1="8" y1="2" x2="8" y2="6" stroke-width="2" stroke-linecap="round"/>
+                <line x1="3" y1="10" x2="21" y2="10" stroke-width="2"/>
+              </svg>
+              <span>{{ formatarData(manutencao.data) }}</span>
+            </div>
+            
+            <div class="info-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="12" cy="7" r="4" stroke-width="2"/>
+              </svg>
+              <span>{{ manutencao.tecnico }}</span>
+            </div>
+            
+            <div class="info-item description">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <polyline points="14 2 14 8 20 8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span>{{ manutencao.descricao }}</span>
             </div>
           </div>
-          <button 
-            @click="confirmarRemocao(manutencao._id, manutencao.maquina)" 
-            class="btn-delete"
-            title="Remover manutenção"
-          >
-            🗑️
+        </div>
+
+        <!-- Card Actions -->
+        <div class="card-actions">
+          <button @click="editarManutencao(manutencao)" class="btn-action btn-edit">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Editar
+          </button>
+          <button @click="deletarManutencao(manutencao._id, getNomeMaquina(manutencao.maquina))" class="btn-action btn-delete">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <polyline points="3 6 5 6 21 6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Deletar
           </button>
         </div>
-
-        <div class="maintenance-body">
-          <strong>Descrição:</strong>
-          <p>{{ manutencao.descricao || 'Sem descrição' }}</p>
-          <div class="maintenance-footer">
-            <span>👨‍🔧 {{ manutencao.tecnico }}</span>
-          </div>
-        </div>
-
       </div>
     </div>
-
-    <!-- Resumo por tipo -->
-    <div v-if="maintenanceStore.maintenances.length > 0" class="summary-card">
-      <h3>📊 Resumo por Tipo</h3>
-      <div class="summary-grid">
-        <div 
-          v-for="(count, tipo) in maintenanceStore.countByType" 
-          :key="tipo"
-          class="summary-item"
-        >
-          <span :class="'badge badge-' + tipo.toLowerCase()">{{ tipo }}</span>
-          <span class="summary-count">{{ count }}</span>
-        </div>
-      </div>
-    </div>
-
   </div>
 </template>
 
-<script>
-import { ref, onMounted } from 'vue';
-import { useMaintenanceStore } from '../stores/maintenanceStore';
+<script setup>
+import { ref, onMounted, computed } from 'vue'
+import { useMaintenanceStore } from '../stores/maintenances'
+import { useMachineStore } from '../stores/machines'
 
-export default {
-  name: 'Manutencoes',
-  
-  setup() {
-    const maintenanceStore = useMaintenanceStore();
-    const mostrarFormulario = ref(false);
-    const sucesso = ref('');
-    
-    const novaManutencao = ref({
-      maquina: '',
-      data: '',
-      tipo: '',
-      descricao: '',
-      tecnico: ''
-    });
+const maintenanceStore = useMaintenanceStore()
+const machineStore = useMachineStore()
 
-    const adicionarManutencao = async () => {
-      if (!novaManutencao.value.maquina || !novaManutencao.value.data) {
-        maintenanceStore.error = '⚠️ Preencha pelo menos a máquina e a data!';
-        return;
-      }
+const mostrarFormulario = ref(false)
+const editando = ref(false)
+const alerta = ref(null)
 
-      try {
-        await maintenanceStore.addMaintenance(novaManutencao.value);
-        sucesso.value = '✅ Manutenção registrada com sucesso!';
-        setTimeout(() => sucesso.value = '', 3000);
-        novaManutencao.value = { maquina: '', data: '', tipo: '', descricao: '', tecnico: '' };
-        mostrarFormulario.value = false;
-      } catch (error) {
-        console.error('Erro ao adicionar:', error);
-      }
-    };
+const formulario = ref({
+  maquina: '',
+  data: '',
+  tipo: '',
+  descricao: '',
+  tecnico: ''
+})
 
-    const confirmarRemocao = (id, maquina) => {
-      if (confirm(`❌ Tem certeza que deseja remover a manutenção da máquina "${maquina}"?\n\nEsta ação não pode ser desfeita.`)) {
-        removerManutencao(id);
-      }
-    };
+onMounted(() => {
+  maintenanceStore.buscarManutencoes()
+  machineStore.buscarMaquinas()
+})
 
-    const removerManutencao = async (id) => {
-      try {
-        await maintenanceStore.deleteMaintenance(id);
-        sucesso.value = '🗑️ Manutenção removida!';
-        setTimeout(() => sucesso.value = '', 3000);
-      } catch (error) {
-        console.error('Erro ao remover:', error);
-      }
-    };
+const manutencoes = computed(() => maintenanceStore.maintenances)
+const maquinas = computed(() => machineStore.machines)
 
-    const cancelarFormulario = () => {
-      const temDados = novaManutencao.value.maquina || novaManutencao.value.data || 
-                       novaManutencao.value.tipo || novaManutencao.value.descricao;
-      
-      if (temDados) {
-        if (confirm('❌ Descartar alterações?\n\nTodos os dados preenchidos serão perdidos.')) {
-          mostrarFormulario.value = false;
-          maintenanceStore.clearError();
-          novaManutencao.value = { maquina: '', data: '', tipo: '', descricao: '', tecnico: '' };
-        }
-      } else {
-        mostrarFormulario.value = false;
-        maintenanceStore.clearError();
-      }
-    };
-
-    const formatarData = (data) => {
-      if (!data) return '';
-      return new Date(data).toLocaleDateString('pt-BR');
-    };
-
-    const getTypeClass = (tipo) => {
-      const classes = {
-        'Preventiva': 'card-preventiva',
-        'Corretiva': 'card-corretiva',
-        'Preditiva': 'card-preditiva'
-      };
-      return classes[tipo] || '';
-    };
-
-    onMounted(async () => {
-      if (maintenanceStore.maintenances.length === 0) {
-        await maintenanceStore.fetchMaintenances();
-      }
-    });
-
-    return {
-      maintenanceStore,
-      mostrarFormulario,
-      novaManutencao,
-      sucesso,
-      adicionarManutencao,
-      confirmarRemocao,
-      cancelarFormulario,
-      formatarData,
-      getTypeClass
-    };
+const salvarManutencao = async () => {
+  try {
+    if (editando.value) {
+      await maintenanceStore.atualizarManutencao(formulario.value._id, formulario.value)
+      mostrarAlerta('Manutenção atualizada com sucesso!', 'sucesso')
+    } else {
+      await maintenanceStore.criarManutencao(formulario.value)
+      mostrarAlerta('Manutenção registrada com sucesso!', 'sucesso')
+    }
+    cancelarEdicao()
+  } catch (erro) {
+    mostrarAlerta('Erro ao salvar manutenção', 'erro')
   }
-};
+}
+
+const editarManutencao = (manutencao) => {
+  formulario.value = { 
+    ...manutencao,
+    data: manutencao.data.split('T')[0]
+  }
+  editando.value = true
+  mostrarFormulario.value = true
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+const deletarManutencao = async (id, maquina) => {
+  if (confirm(`Tem certeza que deseja remover esta manutenção da máquina "${maquina}"?\n\nEsta ação não pode ser desfeita.`)) {
+    try {
+      await maintenanceStore.deletarManutencao(id)
+      mostrarAlerta('Manutenção removida com sucesso!', 'sucesso')
+    } catch (erro) {
+      mostrarAlerta('Erro ao remover manutenção', 'erro')
+    }
+  }
+}
+
+const cancelarEdicao = () => {
+  formulario.value = { maquina: '', data: '', tipo: '', descricao: '', tecnico: '' }
+  editando.value = false
+  mostrarFormulario.value = false
+}
+
+const mostrarAlerta = (texto, tipo) => {
+  alerta.value = { texto, tipo }
+  setTimeout(() => alerta.value = null, 5000)
+}
+
+const formatarData = (data) => {
+  return new Date(data).toLocaleDateString('pt-BR')
+}
+
+const getNomeMaquina = (idMaquina) => {
+  const maquina = maquinas.value.find(m => m._id === idMaquina)
+  return maquina ? maquina.nome : 'Máquina não encontrada'
+}
+
+const getTipoClass = (tipo) => {
+  const classes = {
+    'Preventiva': 'preventiva',
+    'Corretiva': 'corretiva',
+    'Preditiva': 'preditiva'
+  }
+  return classes[tipo] || 'preventiva'
+}
 </script>
 
 <style scoped>
-@import '../style.css';
-
-.manutencoes-page {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
-  animation: fadeIn 0.5s ease-out;
+/* ============================================
+   VARIÁVEIS
+   ============================================ */
+:root {
+  --primary: #10b981;
+  --secondary: #0d9488;
+  --accent: #14b8a6;
+  --dark: #065f46;
+  --light: #d1fae5;
 }
 
-/* Reusa mesmos estilos de Maquinas.vue */
+/* ============================================
+   CONTAINER
+   ============================================ */
+.manutencoes-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);
+  padding: 2rem;
+}
+
+/* ============================================
+   HEADER
+   ============================================ */
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
-  flex-wrap: wrap;
+  animation: fadeInDown 0.6s ease-out;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
   gap: 1rem;
 }
 
-.header-content h1 {
+.header-icon {
+  width: 60px;
+  height: 60px;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
+  justify-content: center;
+  background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(13, 148, 136, 0.3);
 }
 
-.title-icon {
-  font-size: 2.5rem;
+.header-icon svg {
+  width: 32px;
+  height: 32px;
+  color: white;
+  stroke-width: 2;
+}
+
+.page-title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #065f46;
+  margin: 0;
 }
 
 .page-subtitle {
-  color: #6b7280;
-  font-size: 1.1rem;
+  font-size: 1rem;
+  color: #0d9488;
+  margin: 0;
 }
 
 .btn-add {
@@ -357,230 +417,517 @@ export default {
   align-items: center;
   gap: 0.5rem;
   padding: 0.875rem 1.5rem;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
   border: none;
   border-radius: 12px;
+  background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+  color: white;
+  font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
-  font-size: 1rem;
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.4);
+}
+
+.btn-add svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2;
 }
 
 .btn-add:hover {
   transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.5);
+  box-shadow: 0 8px 20px rgba(13, 148, 136, 0.5);
 }
 
-/* Estatísticas */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-.stat-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  border-radius: 16px;
-  padding: 1.5rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  border-left: 4px solid #10b981;
-  animation: fadeInUp 0.5s ease-out;
-}
-
-.stat-icon {
-  font-size: 3rem;
-}
-
-.stat-info h3 {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #10b981;
-  margin-bottom: 0.25rem;
-}
-
-.stat-info p {
-  color: #6b7280;
-  font-size: 0.9rem;
-}
-
-/* Cards de Manutenções */
-.maintenances-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 1.5rem;
-}
-
-.maintenance-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  border-radius: 16px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  border-left: 4px solid #10b981;
-  transition: all 0.3s ease;
-  animation: fadeInUp 0.5s ease-out;
-  animation-fill-mode: both;
-}
-
-.maintenance-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-}
-
-.maintenance-card.card-preventiva {
-  border-left-color: #10b981;
-}
-
-.maintenance-card.card-corretiva {
-  border-left-color: #ef4444;
-}
-
-.maintenance-card.card-preditiva {
-  border-left-color: #3b82f6;
-}
-
-.maintenance-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: start;
-  margin-bottom: 1rem;
-}
-
-.maintenance-machine {
-  font-size: 1.25rem;
-  color: #1f2937;
-  margin-bottom: 0.5rem;
-}
-
-.maintenance-meta {
+/* ============================================
+   ALERT
+   ============================================ */
+.alert {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
-.meta-date {
-  color: #6b7280;
-  font-size: 0.9rem;
-}
-
-.badge {
-  padding: 0.375rem 0.75rem;
+  padding: 1rem 1.25rem;
   border-radius: 12px;
-  font-size: 0.85rem;
+  margin-bottom: 1.5rem;
+  animation: slideInDown 0.4s ease-out;
+}
+
+.alert svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  stroke-width: 2;
+}
+
+.alert.sucesso {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #10b981;
+}
+
+.alert.erro {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #ef4444;
+}
+
+/* ============================================
+   FORM CARD
+   ============================================ */
+.form-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 20px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 8px 32px rgba(13, 148, 136, 0.1);
+  animation: slideInDown 0.4s ease-out;
+}
+
+.form-header {
+  margin-bottom: 1.5rem;
+}
+
+.form-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #065f46;
+  margin: 0;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #065f46;
+}
+
+.label svg {
+  width: 18px;
+  height: 18px;
+  color: #0d9488;
+  stroke-width: 2;
+}
+
+.input,
+.textarea {
+  padding: 0.875rem 1.125rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 1rem;
+  color: #065f46;
+  background: white;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.input:focus,
+.textarea:focus {
+  outline: none;
+  border-color: #0d9488;
+  box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.1);
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+
+.btn-cancel {
+  padding: 0.875rem 1.5rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  background: white;
+  color: #6b7280;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-cancel:hover {
+  border-color: #0d9488;
+  color: #0d9488;
+}
+
+.btn-submit {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.5rem;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.4);
+}
+
+.btn-submit svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2;
+}
+
+.btn-submit:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(13, 148, 136, 0.5);
+}
+
+/* ============================================
+   EMPTY STATE
+   ============================================ */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.empty-icon {
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #ccfbf1 0%, #99f6e4 100%);
+  border-radius: 24px;
+  margin-bottom: 2rem;
+}
+
+.empty-icon svg {
+  width: 64px;
+  height: 64px;
+  color: #065f46;
+  stroke-width: 2;
+}
+
+.empty-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #065f46;
+  margin-bottom: 0.5rem;
+}
+
+.empty-text {
+  font-size: 1.125rem;
+  color: #0d9488;
+  margin-bottom: 2rem;
+}
+
+.btn-empty {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+  color: white;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.4);
+}
+
+.btn-empty svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2;
+}
+
+.btn-empty:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(13, 148, 136, 0.5);
+}
+
+/* ============================================
+   MANUTENÇÕES GRID
+   ============================================ */
+.manutencoes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5rem;
+  animation: fadeInUp 0.6s ease-out;
+}
+
+/* ============================================
+   MANUTENÇÃO CARD
+   ============================================ */
+.manutencao-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 20px;
+  padding: 1.5rem;
+  border-left: 4px solid;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(13, 148, 136, 0.1);
+}
+
+.manutencao-card.preventiva {
+  border-color: #10b981;
+}
+
+.manutencao-card.corretiva {
+  border-color: #f59e0b;
+}
+
+.manutencao-card.preditiva {
+  border-color: #3b82f6;
+}
+
+.manutencao-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(13, 148, 136, 0.2);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.card-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #ccfbf1 0%, #99f6e4 100%);
+  border-radius: 12px;
+}
+
+.card-icon svg {
+  width: 28px;
+  height: 28px;
+  color: #065f46;
+  stroke-width: 2;
+}
+
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8125rem;
   font-weight: 600;
 }
 
-.badge-preventiva {
+.status-badge svg {
+  width: 8px;
+  height: 8px;
+}
+
+.status-badge.preventiva {
   background: #d1fae5;
   color: #065f46;
 }
 
-.badge-corretiva {
-  background: #fee2e2;
-  color: #991b1b;
+.status-badge.corretiva {
+  background: #fef3c7;
+  color: #92400e;
 }
 
-.badge-preditiva {
+.status-badge.preditiva {
   background: #dbeafe;
   color: #1e40af;
 }
 
-.btn-delete {
-  background: #fee2e2;
-  border: none;
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
-  cursor: pointer;
+.card-body {
+  margin-bottom: 1.5rem;
+}
+
+.card-title {
   font-size: 1.25rem;
-  transition: all 0.2s;
+  font-weight: 700;
+  color: #065f46;
+  margin-bottom: 1rem;
+}
+
+.card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.info-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  font-size: 0.9375rem;
+  color: #0d9488;
+}
+
+.info-item svg {
+  width: 18px;
+  height: 18px;
+  color: #14b8a6;
+  stroke-width: 2;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.info-item.description {
+  align-items: flex-start;
+}
+
+.info-item.description span {
+  line-height: 1.6;
+}
+
+.card-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.btn-action {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-action svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2;
+}
+
+.btn-edit {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  color: #1e40af;
+}
+
+.btn-edit:hover {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  transform: translateY(-2px);
+}
+
+.btn-delete {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #991b1b;
 }
 
 .btn-delete:hover {
-  background: #ef4444;
-  transform: scale(1.1);
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  transform: translateY(-2px);
 }
 
-.maintenance-body {
-  background: #f9fafb;
-  padding: 1rem;
-  border-radius: 12px;
-}
-
-.maintenance-body strong {
-  display: block;
-  margin-bottom: 0.5rem;
-  color: #374151;
-  font-size: 0.9rem;
-}
-
-.maintenance-body p {
-  color: #6b7280;
-  line-height: 1.6;
-  margin-bottom: 0.75rem;
-}
-
-.maintenance-footer {
-  padding-top: 0.75rem;
-  border-top: 1px solid #e5e7eb;
-  color: #6b7280;
-  font-size: 0.9rem;
-}
-
-/* Resumo */
-.summary-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  border-radius: 16px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  margin-top: 2rem;
-}
-
-.summary-card h3 {
-  margin-bottom: 1rem;
-  color: #1f2937;
-}
-
-.summary-grid {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.summary-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
-  background: #f9fafb;
-  border-radius: 12px;
-}
-
-.summary-count {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #667eea;
-}
-
-@media (max-width: 768px) {
-  .maintenances-grid {
-    grid-template-columns: 1fr;
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
   }
-  
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 768px) {
+  .manutencoes-container {
+    padding: 1.5rem;
+  }
+
   .page-header {
     flex-direction: column;
     align-items: flex-start;
+    gap: 1rem;
   }
-  
+
   .btn-add {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .manutencoes-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .btn-cancel,
+  .btn-submit {
     width: 100%;
     justify-content: center;
   }
