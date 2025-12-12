@@ -251,8 +251,8 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { useMaintenanceStore } from '../stores/maintenances'
-import { useMachineStore } from '../stores/machines'
+import { useMaintenanceStore } from '../stores/maintenanceStore.js'
+import { useMachineStore } from '../stores/machineStore.js'
 
 const maintenanceStore = useMaintenanceStore()
 const machineStore = useMachineStore()
