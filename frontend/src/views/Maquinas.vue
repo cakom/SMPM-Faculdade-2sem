@@ -235,7 +235,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useMachineStore } from '../stores/machines'
 
 const machineStore = useMachineStore()
@@ -260,20 +260,39 @@ const maquinas = computed(() => machineStore.machines)
 const salvarMaquina = async () => {
   try {
     if (editando.value) {
-      await machineStore.atualizarMaquina(formulario.value._id, formulario.value)
+      // ✅ FIX: Incluir o _id no objeto enviado
+      await machineStore.atualizarMaquina(formulario.value._id, {
+        nome: formulario.value.nome,
+        tipo: formulario.value.tipo,
+        local: formulario.value.local,
+        proximaManutencao: formulario.value.proximaManutencao
+      })
       mostrarAlerta('Máquina atualizada com sucesso!', 'sucesso')
     } else {
-      await machineStore.criarMaquina(formulario.value)
+      await machineStore.criarMaquina({
+        nome: formulario.value.nome,
+        tipo: formulario.value.tipo,
+        local: formulario.value.local,
+        proximaManutencao: formulario.value.proximaManutencao
+      })
       mostrarAlerta('Máquina cadastrada com sucesso!', 'sucesso')
     }
     cancelarEdicao()
   } catch (erro) {
-    mostrarAlerta('Erro ao salvar máquina', 'erro')
+    console.error('Erro ao salvar:', erro)
+    mostrarAlerta(erro.message || 'Erro ao salvar máquina', 'erro')
   }
 }
 
 const editarMaquina = (maquina) => {
-  formulario.value = { ...maquina }
+  // ✅ FIX: Garantir que o _id seja preservado e formatar a data corretamente
+  formulario.value = {
+    _id: maquina._id,
+    nome: maquina.nome,
+    tipo: maquina.tipo,
+    local: maquina.local,
+    proximaManutencao: maquina.proximaManutencao.split('T')[0]
+  }
   editando.value = true
   mostrarFormulario.value = true
   window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -285,7 +304,8 @@ const deletarMaquina = async (id, nome) => {
       await machineStore.deletarMaquina(id)
       mostrarAlerta('Máquina removida com sucesso!', 'sucesso')
     } catch (erro) {
-      mostrarAlerta('Erro ao remover máquina', 'erro')
+      console.error('Erro ao deletar:', erro)
+      mostrarAlerta(erro.message || 'Erro ao remover máquina', 'erro')
     }
   }
 }
