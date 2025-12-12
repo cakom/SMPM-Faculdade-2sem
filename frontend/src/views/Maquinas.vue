@@ -236,7 +236,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useMachineStore } from '../stores/machines'
+import { useMachineStore } from '../stores/machineStore.js'
 
 const machineStore = useMachineStore()
 
