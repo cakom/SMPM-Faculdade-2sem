@@ -273,10 +273,15 @@ const salvarMaquina = async () => {
 }
 
 const editarMaquina = (maquina) => {
-  formulario.value = { ...maquina }
+  formulario.value = {
+    _id: maquina._id,  // ✅ Preserva o ID
+    nome: maquina.nome,
+    tipo: maquina.tipo,
+    local: maquina.local,
+    proximaManutencao: maquina.proximaManutencao.split('T')[0]  // ✅ Formata a data
+  }
   editando.value = true
   mostrarFormulario.value = true
-  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 const deletarMaquina = async (id, nome) => {

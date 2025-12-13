@@ -1,0 +1,130 @@
+# ============================================
+# CONFIGURAÇÕES DO SERVIDOR
+# ============================================
+
+# Porta onde o servidor vai rodar (use 5000 para desenvolvimento local)
+PORT=5000
+
+# Ambiente de execução (development ou production)
+NODE_ENV=development
+
+
+# ============================================
+# BANCO DE DADOS - MONGODB
+# ============================================
+
+# URL de conexão do MongoDB
+# OPÇÃO 1: MongoDB Local (se você tiver instalado no computador)
+# MONGO_URI=mongodb://localhost:27017/smpm
+
+# OPÇÃO 2: MongoDB Atlas (recomendado - gratuito e em nuvem)
+# Formato: mongodb+srv://<usuario>:<senha>@<cluster>.mongodb.net/<nome-do-banco>?retryWrites=true&w=majority
+MONGO_URI=mongodb+srv://bragagabriela002_db_user:<db_password>@smpm.8yqcmru.mongodb.net/?appName=SMPM
+
+# ⚠️ IMPORTANTE: Substitua os valores acima:
+# - seu-usuario: nome de usuário do MongoDB Atlas
+# - sua-senha: senha do MongoDB Atlas (sem caracteres especiais como @, #, etc)
+# - cluster0.xxxxx: endereço do seu cluster (copie do MongoDB Atlas)
+# - smpm: nome do banco de dados (pode manter esse)
+
+
+# ============================================
+# SEGURANÇA - JWT (JSON Web Token)
+# ============================================
+
+# Chave secreta para assinar os tokens JWT
+# ⚠️ NUNCA compartilhe essa chave! Gere uma nova e mantenha em segredo
+# Para gerar uma chave segura, use: node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+JWT_SECRET=HFd1nRTVw5
+
+# Tempo de expiração do token (exemplos: 1h, 7d, 30d)
+JWT_EXPIRES_IN=7d
+
+
+# ============================================
+# CORS - Controle de Acesso
+# ============================================
+
+# URLs permitidas para acessar a API (frontend)
+# Em desenvolvimento local:
+FRONTEND_URL=http://localhost:3000
+
+# Em produção (Vercel):
+# FRONTEND_URL=https://seu-app.vercel.app
+
+# Se quiser permitir múltiplas URLs, separe por vírgula:
+# FRONTEND_URL=http://localhost:3000,https://seu-app.vercel.app
+
+
+# ============================================
+# CONFIGURAÇÕES ADICIONAIS (OPCIONAL)
+# ============================================
+
+# Nível de log (error, warn, info, debug)
+LOG_LEVEL=info
+
+# Limite de requisições por IP (para segurança)
+RATE_LIMIT=100
+
+# Tamanho máximo do body das requisições (em MB)
+BODY_LIMIT=10mb
+
+
+# ============================================
+# CONFIGURAÇÕES PARA PRODUÇÃO (RAILWAY)
+# ============================================
+
+# Quando fizer deploy no Railway, essas variáveis serão definidas automaticamente:
+# - PORT (Railway define automaticamente)
+# - NODE_ENV=production
+# 
+# Você só precisa adicionar no Railway:
+# - MONGO_URI (mesma do MongoDB Atlas)
+# - JWT_SECRET (mesma chave secreta acima)
+# - FRONTEND_URL (URL do Vercel)
+
+
+# ============================================
+# EXEMPLO DE CONFIGURAÇÃO COMPLETA
+# ============================================
+
+# DESENVOLVIMENTO LOCAL:
+# PORT=5000
+# NODE_ENV=development
+# MONGO_URI=mongodb://localhost:27017/smpm
+# JWT_SECRET=minha-chave-super-secreta-de-desenvolvimento-123456
+# FRONTEND_URL=http://localhost:3000
+
+# PRODUÇÃO (RAILWAY):
+# PORT=5000 (Railway define automaticamente)
+# NODE_ENV=production
+# MONGO_URI=mongodb+srv://gabriela:senhaSuperSegura123@cluster0.abc123.mongodb.net/smpm?retryWrites=true&w=majority
+# JWT_SECRET=chave-de-producao-diferente-e-muito-mais-segura-abc123xyz789
+# FRONTEND_URL=https://smpm-frontend.vercel.app
+
+
+# ============================================
+# NOTAS IMPORTANTES
+# ============================================
+
+# 1. NUNCA faça commit deste arquivo no Git!
+#    Adicione .env no arquivo .gitignore
+#
+# 2. Use senhas fortes e únicas para produção
+#
+# 3. MongoDB Atlas:
+#    - Crie uma conta gratuita em: https://www.mongodb.com/cloud/atlas
+#    - Crie um cluster grátis (M0)
+#    - Crie um usuário de banco de dados
+#    - Adicione seu IP na whitelist (ou use 0.0.0.0/0 para permitir todos)
+#    - Copie a string de conexão
+#
+# 4. Para gerar JWT_SECRET seguro:
+#    node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+#
+# 5. Se a senha do MongoDB tiver caracteres especiais (@, #, $, etc),
+#    você precisa fazer URL encoding:
+#    @ = %40
+#    # = %23
+#    $ = %24
+#    Exemplo: senha = P@ssw0rd! → P%40ssw0rd!
