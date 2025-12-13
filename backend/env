@@ -19,7 +19,7 @@ NODE_ENV=development
 
 # OPÇÃO 2: MongoDB Atlas (recomendado - gratuito e em nuvem)
 # Formato: mongodb+srv://<usuario>:<senha>@<cluster>.mongodb.net/<nome-do-banco>?retryWrites=true&w=majority
-MONGO_URI=mongodb+srv://bragagabriela002_db_user:<db_password>@smpm.8yqcmru.mongodb.net/?appName=SMPM
+MONGO_URI=mongodb+srv://admin_sistema:<Seenha123>@cluster0.f5hblle.mongodb.net/?appName=Cluster0
 
 # ⚠️ IMPORTANTE: Substitua os valores acima:
 # - seu-usuario: nome de usuário do MongoDB Atlas
