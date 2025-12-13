@@ -85,6 +85,9 @@ console.log('✅ Rota /api (auth) registrada');
 app.use("/api/users", userRoutes);
 console.log('✅ Rota /api/users registrada');
 
+app.use("/api/users/registro", authRoutes);
+console.log('✅ Rota /api/users registrada');
+
 app.use("/api/maquinas", machineRoutes);
 console.log('✅ Rota /api/maquinas registrada');
 
