@@ -255,16 +255,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-<<<<<<< HEAD
-import { useRouter } from 'vue-router'
-import { useMaintenanceStore } from '../stores/maintenances'
-import { useMachineStore } from '../stores/machines'
-import { useAuthStore } from '../stores/auth'
-=======
-import { useMaintenanceStore } from '../stores/maintenances'
-import { useMachineStore } from '../stores/machines'
->>>>>>> 4ea40a35628061c3d4f865d5d8686766c47b5b9d
+
 import jsPDF from 'jspdf'
 import 'jspdf-autotable'
 
