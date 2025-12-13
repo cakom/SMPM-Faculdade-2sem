@@ -1,23 +1,34 @@
+/**
+ * router/index.js - Configuração das Rotas COM PROTEÇÃO
+ * 
+ * Agora com sistema de autenticação!
+ * Rotas protegidas só podem ser acessadas se estiver logado.
+ */
+
 import { createRouter, createWebHistory } from 'vue-router';
 
+// Importa as páginas
 import Login from '../views/Login.vue';
 import Home from '../views/Home.vue';
 import Maquinas from '../views/Maquinas.vue';
 import Manutencoes from '../views/Manutencoes.vue';
 import Relatorios from '../views/Relatorios.vue';
 
+/**
+ * ROTAS DO SISTEMA
+ */
 const routes = [
   {
     path: '/login',
     name: 'Login',
     component: Login,
-    meta: { requiresAuth: false }
+    meta: { requiresAuth: false }  // Rota pública
   },
   {
     path: '/',
     name: 'Home',
     component: Home,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true }   // Rota protegida
   },
   {
     path: '/maquinas',
@@ -44,39 +55,35 @@ const router = createRouter({
   routes
 });
 
-// Guard de navegação com segurança reforçada
+/**
+ * GUARD DE NAVEGAÇÃO
+ * 
+ * Verifica antes de cada mudança de página:
+ * - Se a rota precisa de autenticação
+ * - Se o usuário está logado
+ * - Redireciona para login se necessário
+ */
 router.beforeEach((to, from, next) => {
-  // Pega o token do localStorage
-  const token = localStorage.getItem('token');
-  
   // Verifica se a rota precisa de autenticação
-  const requerAutenticacao = to.meta.requiresAuth !== false;
+  const requerAutenticacao = to.meta.requiresAuth;
   
-  console.log('🔒 Router Guard:', {
-    para: to.path,
-    requerAuth: requerAutenticacao,
-    temToken: !!token
-  });
+  // Verifica se tem token no localStorage
+  const token = localStorage.getItem('token');
   
   // Se a rota precisa de autenticação E não tem token
   if (requerAutenticacao && !token) {
-    console.log('❌ SEM TOKEN - Redirecionando para /login');
     // Redireciona para login
     next('/login');
-    return;
-  }
-  
+  } 
   // Se está indo para login mas já está logado
-  if (to.path === '/login' && token) {
-    console.log('✅ JÁ LOGADO - Redirecionando para /');
+  else if (to.path === '/login' && token) {
     // Redireciona para home
     next('/');
-    return;
+  } 
+  // Se está tudo OK, continua normalmente
+  else {
+    next();
   }
-  
-  // Se está tudo OK, continua
-  console.log('✅ AUTORIZADO - Permitindo acesso');
-  next();
 });
 
 export default router;
