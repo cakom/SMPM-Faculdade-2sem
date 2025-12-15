@@ -5,7 +5,7 @@
 import axios from 'axios';
 
 // URL da API
-const API_URL = import.meta.env.VITE_API_URL || 'https://smpm-faculdade-2sem-production.up.railway.app';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 // Cria instância do Axios
 const api = axios.create({
