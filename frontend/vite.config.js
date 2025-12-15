@@ -28,5 +28,3 @@ export default defineConfig({
     }
   }
 })
-
-//echo "// force rebuild $(date)" >> frontend/vite.config.js
