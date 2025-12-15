@@ -19,13 +19,14 @@ const allowedOrigins = [
     'http://localhost:5000',
     'https://smpm-faculdade-2sem.vercel.app',
     'https://smpm-faculdade-2sem-gabs-projects.vercel.app',
+    'https://spmp-faculdade-2sem.netlify.app',
     process.env.FRONTEND_URL,
 ].filter(Boolean);
 
 app.use(cors({
     origin: function(origin, callback) {
         if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) === -1 && !origin.includes('railway.app') && !origin.includes('vercel.app')) {
+        if (allowedOrigins.indexOf(origin) === -1 && !origin.includes('railway.app') && !origin.includes('vercel.app') && !origin.includes('netlify.app')) {
             const msg = 'A política de CORS não permite acesso desse domínio.';
             return callback(new Error(msg), false);
         }
