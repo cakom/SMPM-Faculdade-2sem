@@ -39,7 +39,7 @@ app.use(cors({
 app.use(express.json());
 
 // Conexão MongoDB
-const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URL || 'mongodb+srv://bragagabriela002_db_user:GmmAjHuRZhIqOcFC@correto.iqdnxck.mongodb.net/?appName=correto';
+const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URL || 'mongodb://localhost:27017/manutencao';
 
 console.log('🔗 Tentando conectar ao MongoDB...');
 console.log('📍 Ambiente:', process.env.NODE_ENV || 'development');
