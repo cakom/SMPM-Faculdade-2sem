@@ -235,7 +235,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useMachineStore } from '../stores/machineStore.js'
 
 const machineStore = useMachineStore()
@@ -251,8 +251,12 @@ const formulario = ref({
   proximaManutencao: ''
 })
 
-onMounted(() => {
-  machineStore.buscarMaquinas()
+onMounted(async () => {
+  try {
+    await machineStore.fetchMachines()
+  } catch (error) {
+    console.error('Erro ao carregar máquinas:', error)
+  }
 })
 
 const maquinas = computed(() => machineStore.machines)
@@ -260,10 +264,10 @@ const maquinas = computed(() => machineStore.machines)
 const salvarMaquina = async () => {
   try {
     if (editando.value) {
-      await machineStore.atualizarMaquina(formulario.value._id, formulario.value)
+      await machineStore.updateMachine(formulario.value._id, formulario.value)
       mostrarAlerta('Máquina atualizada com sucesso!', 'sucesso')
     } else {
-      await machineStore.criarMaquina(formulario.value)
+      await machineStore.addMachine(formulario.value)
       mostrarAlerta('Máquina cadastrada com sucesso!', 'sucesso')
     }
     cancelarEdicao()
@@ -274,11 +278,11 @@ const salvarMaquina = async () => {
 
 const editarMaquina = (maquina) => {
   formulario.value = {
-    _id: maquina._id,  // ✅ Preserva o ID
+    _id: maquina._id,
     nome: maquina.nome,
     tipo: maquina.tipo,
     local: maquina.local,
-    proximaManutencao: maquina.proximaManutencao.split('T')[0]  // ✅ Formata a data
+    proximaManutencao: maquina.proximaManutencao.split('T')[0]
   }
   editando.value = true
   mostrarFormulario.value = true
@@ -287,7 +291,7 @@ const editarMaquina = (maquina) => {
 const deletarMaquina = async (id, nome) => {
   if (confirm(`Tem certeza que deseja remover a máquina "${nome}"?\n\nEsta ação não pode ser desfeita.`)) {
     try {
-      await machineStore.deletarMaquina(id)
+      await machineStore.deleteMachine(id)
       mostrarAlerta('Máquina removida com sucesso!', 'sucesso')
     } catch (erro) {
       mostrarAlerta('Erro ao remover máquina', 'erro')

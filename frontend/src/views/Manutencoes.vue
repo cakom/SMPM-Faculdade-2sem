@@ -1,4 +1,4 @@
-q<template>
+<template>
   <div class="manutencoes-container">
     <!-- Header -->
     <div class="page-header">
@@ -269,9 +269,13 @@ const formulario = ref({
   tecnico: ''
 })
 
-onMounted(() => {
-  maintenanceStore.buscarManutencoes()
-  machineStore.buscarMaquinas()
+onMounted(async () => {
+  try {
+    await maintenanceStore.fetchMaintenances()
+    await machineStore.fetchMachines()
+  } catch (error) {
+    console.error('Erro ao carregar dados:', error)
+  }
 })
 
 const manutencoes = computed(() => maintenanceStore.maintenances)
@@ -280,10 +284,10 @@ const maquinas = computed(() => machineStore.machines)
 const salvarManutencao = async () => {
   try {
     if (editando.value) {
-      await maintenanceStore.atualizarManutencao(formulario.value._id, formulario.value)
+      await maintenanceStore.updateMaintenance(formulario.value._id, formulario.value)
       mostrarAlerta('Manutenção atualizada com sucesso!', 'sucesso')
     } else {
-      await maintenanceStore.criarManutencao(formulario.value)
+      await maintenanceStore.addMaintenance(formulario.value)
       mostrarAlerta('Manutenção registrada com sucesso!', 'sucesso')
     }
     cancelarEdicao()
@@ -305,7 +309,7 @@ const editarManutencao = (manutencao) => {
 const deletarManutencao = async (id, maquina) => {
   if (confirm(`Tem certeza que deseja remover esta manutenção da máquina "${maquina}"?\n\nEsta ação não pode ser desfeita.`)) {
     try {
-      await maintenanceStore.deletarManutencao(id)
+      await maintenanceStore.deleteMaintenance(id)
       mostrarAlerta('Manutenção removida com sucesso!', 'sucesso')
     } catch (erro) {
       mostrarAlerta('Erro ao remover manutenção', 'erro')
