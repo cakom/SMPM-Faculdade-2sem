@@ -17,7 +17,7 @@ export const useAuthStore = defineStore('auth', {
   actions: {
     async login(email, senha) {
       try {
-        const response = await api.post('/api/auth/login', { email, senha })
+        const response = await api.post('/api/login', { email, senha })
         const data = response.data
 
         this.token = data.token
@@ -35,7 +35,7 @@ export const useAuthStore = defineStore('auth', {
 
     async registro(userData) {
       try {
-        const response = await api.post('/api/auth/registro', userData)
+        const response = await api.post('/api/registro', userData)
         return response.data
       } catch (error) {
         console.error('Erro no registro:', error)
@@ -63,7 +63,7 @@ export const useAuthStore = defineStore('auth', {
       }
 
       try {
-        const response = await api.get('/api/auth/me')
+        const response = await api.get('/api/me')
         this.user = response.data.user
         this.token = token
         this.isAuthenticated = true
