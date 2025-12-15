@@ -1,11 +1,11 @@
 /**
- * services/api.js - Instância do Axios (SIMPLIFICADO)
+ * services/api.js - Instância do Axios
  */
 
 import axios from 'axios';
 
-// URL da API
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+// URL da API - PRODUÇÃO
+const API_URL = 'https://smpm-faculdade-2sem-production.up.railway.app';
 
 // Cria instância do Axios
 const api = axios.create({
