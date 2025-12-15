@@ -11,3 +11,5 @@ app.use(router);
 app.mount('#app');
 
 console.log('✅ Vue iniciado!');
+
+// v2
