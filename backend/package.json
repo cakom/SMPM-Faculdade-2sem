@@ -4,7 +4,7 @@
   "description": "Backend do Sistema de Manutenção Preventiva",
   "main": "server.js",
   "scripts": {
-    "start": "node backend/server.js",
+    "start": "node src/server.js",
     "dev": "nodemon server.js"
   },
   "keywords": [
