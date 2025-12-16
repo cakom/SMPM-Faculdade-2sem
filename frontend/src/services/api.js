@@ -4,14 +4,20 @@
 
 import axios from 'axios';
 
+// =======================
+// BASE URL
+// =======================
 const API_URL =
   import.meta.env.MODE === 'production'
     ? 'https://smpm-faculdade-2sem-production.up.railway.app/api'
     : 'http://localhost:5000/api';
 
+// =======================
+// AXIOS INSTANCE
+// =======================
 const api = axios.create({
   baseURL: API_URL,
-  timeout: 15000, // ↑ um pouco maior para Railway
+  timeout: 15000,
   headers: {
     'Content-Type': 'application/json'
   }
