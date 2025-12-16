@@ -1,19 +1,19 @@
-// backend/src/routes/authRoutes.js
 const express = require("express");
-const router = express.Router();
-const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const User = require("../models/User");
+
+const router = express.Router();
 
 const JWT_SECRET = process.env.JWT_SECRET || "sua-chave-secreta-aqui";
 
 /**
  * @swagger
- * /api/auth/register:
+ * /api/auth/registro:
  *   post:
  *     summary: Registrar novo usuário
  *     tags: [Autenticação]
- *     description: Cria um novo usuário no sistema com senha criptografada
+ *     description: Cria um novo usuário no sistema
  *     requestBody:
  *       required: true
  *       content:
@@ -27,19 +27,13 @@ const JWT_SECRET = process.env.JWT_SECRET || "sua-chave-secreta-aqui";
  *             properties:
  *               nome:
  *                 type: string
- *                 example: João Silva
  *               email:
  *                 type: string
- *                 format: email
- *                 example: joao@email.com
  *               senha:
  *                 type: string
- *                 format: password
- *                 example: senha123
  *               role:
  *                 type: string
  *                 enum: [admin, tecnico, operador]
- *                 example: operador
  *     responses:
  *       201:
  *         description: Usuário criado com sucesso
@@ -48,7 +42,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "sua-chave-secreta-aqui";
  *       500:
  *         description: Erro no servidor
  */
-router.post("/register", async (req, res) => {
+router.post("/registro", async (req, res) => {
   try {
     const { nome, email, senha, role } = req.body;
 
@@ -61,24 +55,24 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({ erro: "Email já cadastrado" });
     }
 
-    const senhaCriptografada = await bcrypt.hash(senha, 10);
+    const senhaHash = await bcrypt.hash(senha, 10);
 
-    const novoUsuario = await User.create({
+    const usuario = await User.create({
       nome,
       email,
-      senha: senhaCriptografada,
+      senha: senhaHash,
       role: role || "operador",
     });
 
-    const userResponse = novoUsuario.toObject();
+    const userResponse = usuario.toObject();
     delete userResponse.senha;
 
     res.status(201).json({
       mensagem: "Usuário criado com sucesso!",
       usuario: userResponse,
     });
-  } catch (erro) {
-    console.error(erro);
+  } catch (error) {
+    console.error("Erro no registro:", error);
     res.status(500).json({ erro: "Erro ao registrar usuário" });
   }
 });
@@ -102,10 +96,8 @@ router.post("/register", async (req, res) => {
  *             properties:
  *               email:
  *                 type: string
- *                 example: joao@email.com
  *               senha:
  *                 type: string
- *                 example: senha123
  *     responses:
  *       200:
  *         description: Login realizado com sucesso
@@ -118,6 +110,10 @@ router.post("/login", async (req, res) => {
   try {
     const { email, senha } = req.body;
 
+    if (!email || !senha) {
+      return res.status(400).json({ erro: "Email e senha são obrigatórios" });
+    }
+
     const usuario = await User.findOne({ email });
     if (!usuario) {
       return res.status(401).json({ erro: "Email ou senha incorretos" });
@@ -129,7 +125,11 @@ router.post("/login", async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: usuario._id, email: usuario.email, role: usuario.role },
+      {
+        id: usuario._id,
+        email: usuario.email,
+        role: usuario.role,
+      },
       JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -142,8 +142,8 @@ router.post("/login", async (req, res) => {
       token,
       usuario: userResponse,
     });
-  } catch (erro) {
-    console.error(erro);
+  } catch (error) {
+    console.error("Erro no login:", error);
     res.status(500).json({ erro: "Erro ao fazer login" });
   }
 });
