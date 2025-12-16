@@ -90,7 +90,7 @@ export const useMaintenanceStore = defineStore("maintenance", {
             this.error = null;
             
             try {
-                const res = await api.get("/api/manutencoes");
+                const res = await api.get("/manutencoes");
                 this.maintenances = res.data;
                 
             } catch (err) {
@@ -112,7 +112,7 @@ export const useMaintenanceStore = defineStore("maintenance", {
             this.error = null;
             
             try {
-                const res = await api.post("/api/manutencoes", maintenance);
+                const res = await api.post("/manutencoes", maintenance);
                 
                 // Adiciona no início (mais recente primeiro)
                 this.maintenances.unshift(res.data);
@@ -139,7 +139,7 @@ export const useMaintenanceStore = defineStore("maintenance", {
             this.error = null;
             
             try {
-                const res = await api.put(`/api/manutencoes/${id}`, updates);
+                const res = await api.put(`/manutencoes/${id}`, updates);
                 
                 const index = this.maintenances.findIndex(m => m._id === id);
                 if (index !== -1) {
@@ -167,7 +167,7 @@ export const useMaintenanceStore = defineStore("maintenance", {
             this.error = null;
             
             try {
-                await api.delete(`/api/manutencoes/${id}`);
+                await api.delete(`/manutencoes/${id}`);
                 
                 // Remove do estado local
                 this.maintenances = this.maintenances.filter(m => m._id !== id);
