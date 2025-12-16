@@ -4,45 +4,54 @@
 
 import axios from 'axios';
 
-// URL da API - PRODUÇÃO
-const API_URL = 'https://smpm-faculdade-2sem-production.up.railway.app';
+const API_URL =
+  import.meta.env.MODE === 'production'
+    ? 'https://smpm-faculdade-2sem-production.up.railway.app/api'
+    : 'http://localhost:5000/api';
 
-// Cria instância do Axios
 const api = axios.create({
-    baseURL: API_URL,
-    timeout: 10000,
-    headers: {
-        'Content-Type': 'application/json'
-    }
+  baseURL: API_URL,
+  timeout: 15000, // ↑ um pouco maior para Railway
+  headers: {
+    'Content-Type': 'application/json'
+  }
 });
 
-// Interceptador para adicionar token
+// =======================
+// REQUEST INTERCEPTOR
+// =======================
 api.interceptors.request.use(
-    (config) => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-    },
-    (error) => {
-        return Promise.reject(error);
+  (config) => {
+    const token = localStorage.getItem('token');
+
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
+
+    return config;
+  },
+  (error) => Promise.reject(error)
 );
 
-// Interceptador de resposta
+// =======================
+// RESPONSE INTERCEPTOR
+// =======================
 api.interceptors.response.use(
-    (response) => response,
-    (error) => {
-        if (error.response?.status === 401) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            if (window.location.pathname !== '/login') {
-                window.location.href = '/login';
-            }
-        }
-        return Promise.reject(error);
+  (response) => response,
+  (error) => {
+    const status = error.response?.status;
+
+    if (status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+      }
     }
+
+    return Promise.reject(error);
+  }
 );
 
 export default api;

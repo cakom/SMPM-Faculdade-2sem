@@ -5,7 +5,7 @@ export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null,
     token: localStorage.getItem('token') || null,
-    isAuthenticated: false
+    isAuthenticated: !!localStorage.getItem('token')
   }),
 
   getters: {
@@ -15,56 +15,70 @@ export const useAuthStore = defineStore('auth', {
   },
 
   actions: {
+    // 🔐 LOGIN
     async login(email, senha) {
       try {
-        const response = await api.post('/api/auth/login', { email, senha })
-        const data = response.data
+        const { data } = await api.post('/auth/login', { email, senha })
 
         this.token = data.token
         this.user = data.usuario || data.user
         this.isAuthenticated = true
 
         localStorage.setItem('token', data.token)
-        
+        localStorage.setItem('user', JSON.stringify(this.user))
+
         return data
       } catch (error) {
         console.error('Erro no login:', error)
-        throw new Error(error.response?.data?.erro || 'Erro ao fazer login')
+        throw new Error(
+          error.response?.data?.erro ||
+          error.response?.data?.message ||
+          'Erro ao fazer login'
+        )
       }
     },
 
+    // 📝 REGISTRO
     async registro(userData) {
       try {
-        const response = await api.post('/api/auth/registro', userData)
-        return response.data
+        const { data } = await api.post('/auth/register', userData)
+        return data
       } catch (error) {
         console.error('Erro no registro:', error)
-        throw new Error(error.response?.data?.erro || 'Erro ao registrar usuário')
+        throw new Error(
+          error.response?.data?.erro ||
+          error.response?.data?.message ||
+          'Erro ao registrar usuário'
+        )
       }
     },
 
+    // Alias (caso use register em algum lugar)
     async register(userData) {
-      return this.registro(userData)
+      return await this.registro(userData)
     },
 
+    // 🚪 LOGOUT
     logout() {
       this.user = null
       this.token = null
       this.isAuthenticated = false
       localStorage.removeItem('token')
+      localStorage.removeItem('user')
     },
 
+    // 🔍 VERIFICAR TOKEN
     async checkAuth() {
       const token = localStorage.getItem('token')
-      
+
       if (!token) {
         this.logout()
         return false
       }
 
       try {
-        const response = await api.get('/api/auth/me')
-        this.user = response.data.user
+        const { data } = await api.get('/auth/me')
+        this.user = data.user
         this.token = token
         this.isAuthenticated = true
         return true
@@ -75,10 +89,9 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    // ⚙️ INICIALIZAÇÃO
     initializeAuth() {
-      const token = localStorage.getItem('token')
-      if (token) {
-        this.token = token
+      if (this.token) {
         this.checkAuth()
       }
     }

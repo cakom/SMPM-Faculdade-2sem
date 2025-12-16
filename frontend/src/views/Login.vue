@@ -180,7 +180,7 @@ const handleSubmit = async () => {
   } catch (erro) {
     mensagem.value = { 
       tipo: 'erro', 
-      texto: erro.response?.data?.erro || 'Erro ao processar requisição' 
+      texto: erro.message || 'Erro ao processar requisição' 
     }
   } finally {
     loading.value = false
