@@ -1,11 +1,12 @@
+// frontend/src/stores/authStore.js
 import { defineStore } from 'pinia'
 import api from '../services/api'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null,
-    token: localStorage.getItem('token') || null,
-    isAuthenticated: !!localStorage.getItem('token')
+    token: null,
+    isAuthenticated: false
   }),
 
   getters: {
@@ -21,11 +22,11 @@ export const useAuthStore = defineStore('auth', {
         const { data } = await api.post('/auth/login', { email, senha })
 
         this.token = data.token
-        this.user = data.usuario || data.user
+        this.user = data.usuario
         this.isAuthenticated = true
 
         localStorage.setItem('token', data.token)
-        localStorage.setItem('user', JSON.stringify(this.user))
+        localStorage.setItem('user', JSON.stringify(data.usuario))
 
         return data
       } catch (error) {
@@ -53,11 +54,6 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    // Alias (caso use registro em algum lugar)
-    async registro(userData) {
-      return await this.registro(userData)
-    },
-
     // 🚪 LOGOUT
     logout() {
       this.user = null
@@ -67,32 +63,15 @@ export const useAuthStore = defineStore('auth', {
       localStorage.removeItem('user')
     },
 
-    // 🔍 VERIFICAR TOKEN
-    async checkAuth() {
-      const token = localStorage.getItem('token')
-
-      if (!token) {
-        this.logout()
-        return false
-      }
-
-      try {
-        const { data } = await api.get('/auth/me')
-        this.user = data.user
-        this.token = token
-        this.isAuthenticated = true
-        return true
-      } catch (error) {
-        console.error('Erro ao verificar autenticação:', error)
-        this.logout()
-        return false
-      }
-    },
-
-    // ⚙️ INICIALIZAÇÃO
+    // ⚙️ INICIALIZAÇÃO (SEM API)
     initializeAuth() {
-      if (this.token) {
-        this.checkAuth()
+      const token = localStorage.getItem('token')
+      const user = localStorage.getItem('user')
+
+      if (token && user) {
+        this.token = token
+        this.user = JSON.parse(user)
+        this.isAuthenticated = true
       }
     }
   }
