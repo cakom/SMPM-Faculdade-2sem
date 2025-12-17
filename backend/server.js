@@ -13,40 +13,24 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // =======================
-// CORS
+// CORS (FIX DEFINITIVO)
 // =======================
-const allowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:3000",
-  "http://localhost:5000",
-  "https://smpm-faculdade-2sem.vercel.app",
-  "https://smpm-faculdade-2sem-gabs-projects.vercel.app",
-  "https://spmp-faculdade-2sem.netlify.app",
-  process.env.FRONTEND_URL,
-].filter(Boolean);
+const corsOptions = {
+  origin: [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "https://smpm-faculdade-2sem.vercel.app",
+    "https://smpm-faculdade-2sem-gabs-projects.vercel.app",
+    "https://spmp-faculdade-2sem.netlify.app",
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+};
 
-app.use(
-  cors({
-    origin(origin, callback) {
-      if (!origin) return callback(null, true);
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions)); // 🔥 ESSENCIAL PARA RAILWAY
 
-      if (
-        allowedOrigins.includes(origin) ||
-        origin.includes("railway.app") ||
-        origin.includes("vercel.app") ||
-        origin.includes("netlify.app")
-      ) {
-        return callback(null, true);
-      }
-
-      return callback(
-        new Error("A política de CORS não permite acesso desse domínio."),
-        false
-      );
-    },
-    credentials: true,
-  })
-);
 console.log("✅ CORS configurado");
 
 // =======================
