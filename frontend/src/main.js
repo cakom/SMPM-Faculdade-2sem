@@ -1,15 +1,20 @@
-import { createApp } from 'vue';
-import { createPinia } from 'pinia';
-import App from './App.vue';
-import router from './router';
+import { createApp } from 'vue'
+import { createPinia } from 'pinia'
+import App from './App.vue'
+import router from './router'
 
-const app = createApp(App);
-const pinia = createPinia();
+import { useAuthStore } from './stores/authStore'
 
-app.use(pinia);
-app.use(router);
-app.mount('#app');
+const app = createApp(App)
+const pinia = createPinia()
 
-console.log('✅ Vue iniciado!');
+app.use(pinia)
 
-// v2
+// 🔐 Inicializa autenticação antes de montar a app
+const authStore = useAuthStore()
+authStore.initializeAuth()
+
+app.use(router)
+app.mount('#app')
+
+console.log('✅ Vue iniciado!')
