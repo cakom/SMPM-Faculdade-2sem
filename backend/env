@@ -6,7 +6,7 @@
 PORT=5000
 
 # Ambiente de execução (development ou production)
-NODE_ENV=development
+NODE_ENV=production
 
 
 # ============================================
@@ -46,7 +46,7 @@ JWT_EXPIRES_IN=7d
 
 # URLs permitidas para acessar a API (frontend)
 # Em desenvolvimento local:
-FRONTEND_URL=http://localhost:3000
+FRONTEND_URL=https://smpm-faculdade-2sem-4yio.vercel.app
 
 # Em produção (Vercel):
 # FRONTEND_URL=https://seu-app.vercel.app
