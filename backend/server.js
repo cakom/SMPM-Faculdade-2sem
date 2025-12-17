@@ -15,23 +15,21 @@ const PORT = process.env.PORT || 5000;
 // =======================
 // CORS (FIX DEFINITIVO)
 // =======================
-const corsOptions = {
+app.use(cors({
   origin: [
     "http://localhost:5173",
     "http://localhost:3000",
     "https://smpm-faculdade-2sem.vercel.app",
-    "https://smpm-faculdade-2sem-gabs-projects.vercel.app",
-    "https://spmp-faculdade-2sem.netlify.app",
+    "https://smpm-faculdade-2sem-p11r.vercel.app",
+    "https://smpm-faculdade-2sem-gabs-projects.vercel.app"
   ],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true,
-};
+  credentials: true
+}));
 
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // 🔥 ESSENCIAL PARA RAILWAY
-
-console.log("✅ CORS configurado");
+// 👇 ESSENCIAL PARA PREFLIGHT
+app.options("*", cors());
 
 // =======================
 // JSON
