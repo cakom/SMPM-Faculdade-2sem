@@ -8,8 +8,13 @@ const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "sua-chave-secreta-aqui";
 
 /**
+ * ============================
+ * REGISTER
+ * ============================
+ */
+/**
  * @swagger
- * /api/auth/registro:
+ * /api/auth/register:
  *   post:
  *     summary: Registrar novo usuário
  *     tags: [Autenticação]
@@ -38,16 +43,18 @@ const JWT_SECRET = process.env.JWT_SECRET || "sua-chave-secreta-aqui";
  *       201:
  *         description: Usuário criado com sucesso
  *       400:
- *         description: Email já cadastrado
+ *         description: Dados inválidos
  *       500:
  *         description: Erro no servidor
  */
-router.post("/registro", async (req, res) => {
+router.post("/register", async (req, res) => {
   try {
     const { nome, email, senha, role } = req.body;
 
     if (!nome || !email || !senha) {
-      return res.status(400).json({ erro: "Dados obrigatórios não informados" });
+      return res.status(400).json({
+        erro: "Nome, email e senha são obrigatórios",
+      });
     }
 
     const usuarioExiste = await User.findOne({ email });
@@ -67,16 +74,21 @@ router.post("/registro", async (req, res) => {
     const userResponse = usuario.toObject();
     delete userResponse.senha;
 
-    res.status(201).json({
+    return res.status(201).json({
       mensagem: "Usuário criado com sucesso!",
       usuario: userResponse,
     });
   } catch (error) {
-    console.error("Erro no registro:", error);
-    res.status(500).json({ erro: "Erro ao registrar usuário" });
+    console.error("Erro no register:", error);
+    return res.status(500).json({ erro: "Erro ao registrar usuário" });
   }
 });
 
+/**
+ * ============================
+ * LOGIN
+ * ============================
+ */
 /**
  * @swagger
  * /api/auth/login:
@@ -102,7 +114,7 @@ router.post("/registro", async (req, res) => {
  *       200:
  *         description: Login realizado com sucesso
  *       401:
- *         description: Email ou senha incorretos
+ *         description: Credenciais inválidas
  *       500:
  *         description: Erro no servidor
  */
@@ -111,7 +123,9 @@ router.post("/login", async (req, res) => {
     const { email, senha } = req.body;
 
     if (!email || !senha) {
-      return res.status(400).json({ erro: "Email e senha são obrigatórios" });
+      return res.status(400).json({
+        erro: "Email e senha são obrigatórios",
+      });
     }
 
     const usuario = await User.findOne({ email });
@@ -137,14 +151,14 @@ router.post("/login", async (req, res) => {
     const userResponse = usuario.toObject();
     delete userResponse.senha;
 
-    res.json({
+    return res.json({
       mensagem: "Login realizado com sucesso!",
       token,
       usuario: userResponse,
     });
   } catch (error) {
     console.error("Erro no login:", error);
-    res.status(500).json({ erro: "Erro ao fazer login" });
+    return res.status(500).json({ erro: "Erro ao fazer login" });
   }
 });
 
