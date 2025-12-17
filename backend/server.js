@@ -5,7 +5,9 @@ require("dotenv").config();
 
 console.log("🚀 Iniciando servidor...");
 
-// Swagger
+// =======================
+// SWAGGER
+// =======================
 const { swaggerUi, specs } = require("./swagger");
 console.log("✅ Swagger carregado");
 
@@ -13,24 +15,36 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // =======================
-// CORS (FIX DEFINITIVO)
+// CORS - DEFINITIVO (LOCAL + VERCEL)
 // =======================
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "http://localhost:5000",
+  process.env.FRONTEND_URL,
+];
+
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "https://smpm-faculdade-2sem.vercel.app",
-      "https://smpm-faculdade-2sem-p11r.vercel.app"
-    ],
+    origin: function (origin, callback) {
+      // Libera Postman, Swagger e chamadas sem origin
+      if (!origin) return callback(null, true);
+
+      if (
+        allowedOrigins.includes(origin) ||
+        origin.endsWith(".vercel.app")
+      ) {
+        return callback(null, true);
+      }
+
+      console.error("❌ CORS bloqueado para:", origin);
+      return callback(new Error("Bloqueado pelo CORS"), false);
+    },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true
+    credentials: true,
   })
 );
-
-// ⚠️ MUITO IMPORTANTE
-app.options("*", cors());
-
 
 // =======================
 // JSON
@@ -39,7 +53,7 @@ app.use(express.json());
 console.log("✅ JSON parser configurado");
 
 // =======================
-// MongoDB
+// MONGODB
 // =======================
 const MONGO_URI =
   process.env.MONGO_URI ||
@@ -56,7 +70,7 @@ mongoose
     console.log("📍 Database:", mongoose.connection.name);
   })
   .catch((err) => {
-    console.error("❌ ERRO ao conectar MongoDB:", err.message);
+    console.error("❌ Erro ao conectar MongoDB:", err.message);
   });
 
 // =======================
@@ -72,7 +86,7 @@ const maintenanceRoutes = require("./src/routes/maintenanceRoutes");
 console.log("✅ Rotas carregadas");
 
 // =======================
-// Swagger
+// SWAGGER
 // =======================
 app.use(
   "/api-docs",
@@ -159,8 +173,8 @@ app.use((err, req, res, next) => {
 app.listen(PORT, "0.0.0.0", () => {
   console.log("=".repeat(50));
   console.log("🚀 SERVIDOR ONLINE!");
-  console.log(`📍 URL: http://localhost:${PORT}`);
-  console.log(`📚 Docs: http://localhost:${PORT}/api-docs`);
+  console.log(`📍 Porta: ${PORT}`);
+  console.log(`📚 Docs: /api-docs`);
   console.log(`🌍 Ambiente: ${process.env.NODE_ENV || "development"}`);
   console.log("=".repeat(50));
 });
