@@ -4,11 +4,9 @@ const api = axios.create({
   baseURL: `${import.meta.env.VITE_API_URL}/api`,
   headers: {
     'Content-Type': 'application/json'
-  },
-  timeout: 15000
+  }
 })
 
-// Interceptor para enviar token
 api.interceptors.request.use(config => {
   const token = localStorage.getItem('token')
   if (token) {
