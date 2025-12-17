@@ -15,21 +15,22 @@ const PORT = process.env.PORT || 5000;
 // =======================
 // CORS (FIX DEFINITIVO)
 // =======================
-app.use(cors({
-  origin: [
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "https://smpm-faculdade-2sem.vercel.app",
-    "https://smpm-faculdade-2sem-p11r.vercel.app",
-    "https://smpm-faculdade-2sem-gabs-projects.vercel.app"
-  ],
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://smpm-faculdade-2sem.vercel.app",
+      "https://smpm-faculdade-2sem-p11r.vercel.app"
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true
+  })
+);
 
-// 👇 ESSENCIAL PARA PREFLIGHT
+// ⚠️ MUITO IMPORTANTE
 app.options("*", cors());
+
 
 // =======================
 // JSON
@@ -112,7 +113,7 @@ app.get("/", (req, res) => {
         ? "✅ Conectado"
         : "❌ Desconectado",
     rotas: {
-      auth: "/api/auth/login | /api/auth/register",
+      auth: "/api/auth/login | /api/auth/registro",
       users: "/api/users",
       maquinas: "/api/maquinas",
       manutencoes: "/api/manutencoes",

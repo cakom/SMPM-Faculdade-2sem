@@ -63,7 +63,7 @@ export const useUserStore = defineStore("user", {
             }
         },
 
-        async register(userData) {
+        async registro(userData) {
             this.loading = true;
             this.error = null;
             

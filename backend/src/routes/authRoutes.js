@@ -9,12 +9,12 @@ const JWT_SECRET = process.env.JWT_SECRET || "sua-chave-secreta-aqui";
 
 /**
  * ============================
- * REGISTER
+ * registro
  * ============================
  */
 /**
  * @swagger
- * /api/auth/register:
+ * /api/auth/registro:
  *   post:
  *     summary: Registrar novo usuário
  *     tags: [Autenticação]
@@ -47,7 +47,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "sua-chave-secreta-aqui";
  *       500:
  *         description: Erro no servidor
  */
-router.post("/register", async (req, res) => {
+router.post("/registro", async (req, res) => {
   try {
     const { nome, email, senha, role } = req.body;
 
@@ -79,7 +79,7 @@ router.post("/register", async (req, res) => {
       usuario: userResponse,
     });
   } catch (error) {
-    console.error("Erro no register:", error);
+    console.error("Erro no registro:", error);
     return res.status(500).json({ erro: "Erro ao registrar usuário" });
   }
 });

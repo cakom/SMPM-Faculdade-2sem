@@ -41,7 +41,7 @@ export const useAuthStore = defineStore('auth', {
     // 📝 REGISTRO
     async registro(userData) {
       try {
-        const { data } = await api.post('/auth/register', userData)
+        const { data } = await api.post('/auth/registro', userData)
         return data
       } catch (error) {
         console.error('Erro no registro:', error)
@@ -53,8 +53,8 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    // Alias (caso use register em algum lugar)
-    async register(userData) {
+    // Alias (caso use registro em algum lugar)
+    async registro(userData) {
       return await this.registro(userData)
     },
 
