@@ -1,6 +1,5 @@
 /**
- * src/router/index.js
- * Configuração das rotas com proteção por autenticação
+ * router/index.js - Configuração das Rotas COM PROTEÇÃO
  */
 
 import { createRouter, createWebHistory } from 'vue-router'
@@ -51,21 +50,26 @@ const router = createRouter({
   routes
 })
 
-// 🔐 Guard global
+/**
+ * 🔐 GUARD GLOBAL
+ */
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
 
   const precisaAuth = to.meta.requiresAuth
   const estaLogado = authStore.isAuthenticated
 
+  // 🔒 Rota protegida sem login
   if (precisaAuth && !estaLogado) {
     return next('/login')
   }
 
+  // 🔁 Indo para login já logado
   if (to.path === '/login' && estaLogado) {
     return next('/')
   }
 
+  // ✅ Tudo ok
   next()
 })
 
