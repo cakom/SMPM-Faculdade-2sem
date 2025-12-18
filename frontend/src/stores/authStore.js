@@ -1,4 +1,3 @@
-// frontend/src/stores/authStore.js
 import { defineStore } from 'pinia'
 import api from '../services/api'
 
@@ -16,10 +15,9 @@ export const useAuthStore = defineStore('auth', {
   },
 
   actions: {
-    // 🔐 LOGIN
     async login(email, senha) {
       try {
-        const { data } = await api.post('/auth/login', { email, senha })
+        const { data } = await api.post('/api/auth/login', { email, senha })
 
         this.token = data.token
         this.user = data.usuario
@@ -39,10 +37,9 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    // 📝 REGISTRO
     async registro(userData) {
       try {
-        const { data } = await api.post('/auth/registro', userData)
+        const { data } = await api.post('/api/auth/registro', userData)
         return data
       } catch (error) {
         console.error('Erro no registro:', error)
@@ -54,7 +51,6 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    // 🚪 LOGOUT
     logout() {
       this.user = null
       this.token = null
@@ -63,7 +59,6 @@ export const useAuthStore = defineStore('auth', {
       localStorage.removeItem('user')
     },
 
-    // ⚙️ INICIALIZAÇÃO (SEM API)
     initializeAuth() {
       const token = localStorage.getItem('token')
       const user = localStorage.getItem('user')

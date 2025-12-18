@@ -40,7 +40,7 @@ export const useUserStore = defineStore("user", {
             this.error = null;
             
             try {
-                const res = await api.post("/api/login", { email, senha });
+                const res = await api.post("/api/auth/login", { email, senha });
                 
                 this.token = res.data.token;
                 this.currentUser = res.data.usuario;
@@ -68,7 +68,7 @@ export const useUserStore = defineStore("user", {
             this.error = null;
             
             try {
-                const res = await api.post("/api/registro", userData);
+                const res = await api.post("/api/auth/registro", userData);
                 return res.data;
                 
             } catch (err) {
@@ -115,7 +115,7 @@ export const useUserStore = defineStore("user", {
             this.error = null;
             
             try {
-                const res = await api.get("/api/users");
+                const res = await api.get("/api/auth/users");
                 this.users = res.data;
                 
             } catch (err) {
@@ -133,7 +133,7 @@ export const useUserStore = defineStore("user", {
             this.error = null;
             
             try {
-                const res = await api.post("/api/users", user);
+                const res = await api.post("/api/auth/users", user);
                 this.users.push(res.data);
                 return res.data;
                 
@@ -152,7 +152,7 @@ export const useUserStore = defineStore("user", {
             this.error = null;
             
             try {
-                await api.delete(`/api/users/${id}`);
+                await api.delete(`/api/auth/users/${id}`);
                 this.users = this.users.filter(u => u._id !== id);
                 
             } catch (err) {
@@ -170,7 +170,7 @@ export const useUserStore = defineStore("user", {
             this.error = null;
             
             try {
-                const res = await api.put(`/api/users/${id}`, updates);
+                const res = await api.put(`/api/auth/users/${id}`, updates);
                 
                 if (id === this.currentUser?._id) {
                     this.currentUser = res.data;
