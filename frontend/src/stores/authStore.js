@@ -1,73 +1,92 @@
-import { defineStore } from 'pinia'
-import api from '../services/api'
+import { defineStore } from "pinia";
+import api from "../services/api";
 
-export const useAuthStore = defineStore('auth', {
+export const useUserStore = defineStore("user", {
   state: () => ({
-    user: null,
+    currentUser: null,
     token: null,
-    isAuthenticated: false
+    isAuthenticated: false,
+    users: [],
+    loading: false,
+    error: null
   }),
 
   getters: {
-    getUser: (state) => state.user,
-    getToken: (state) => state.token,
-    isLoggedIn: (state) => state.isAuthenticated
+    isAdmin: (state) => state.currentUser?.role === "admin",
+    isTecnico: (state) => state.currentUser?.role === "tecnico",
+    isOperador: (state) => state.currentUser?.role === "operador",
+    userName: (state) => state.currentUser?.nome || "Usuário",
+    userEmail: (state) => state.currentUser?.email || ""
   },
 
   actions: {
+    // 🔐 LOGIN
     async login(email, senha) {
+      this.loading = true;
+      this.error = null;
+
       try {
-        const { data } = await api.post('/api/auth/login', { email, senha })
+        const res = await api.post("/auth/login", { email, senha });
 
-        this.token = data.token
-        this.user = data.usuario
-        this.isAuthenticated = true
+        this.token = res.data.token;
+        this.currentUser = res.data.usuario;
+        this.isAuthenticated = true;
 
-        localStorage.setItem('token', data.token)
-        localStorage.setItem('user', JSON.stringify(data.usuario))
+        localStorage.setItem("token", this.token);
+        localStorage.setItem("user", JSON.stringify(this.currentUser));
 
-        return data
-      } catch (error) {
-        console.error('Erro no login:', error)
-        throw new Error(
-          error.response?.data?.erro ||
-          error.response?.data?.message ||
-          'Erro ao fazer login'
-        )
+        return res.data;
+      } catch (err) {
+        this.error =
+          err.response?.data?.erro ||
+          "Erro ao fazer login";
+
+        throw err;
+      } finally {
+        this.loading = false;
       }
     },
 
+    // 📝 REGISTRO
     async registro(userData) {
+      this.loading = true;
+      this.error = null;
+
       try {
-        const { data } = await api.post('/api/auth/registro', userData)
-        return data
-      } catch (error) {
-        console.error('Erro no registro:', error)
-        throw new Error(
-          error.response?.data?.erro ||
-          error.response?.data?.message ||
-          'Erro ao registrar usuário'
-        )
+        const res = await api.post("/auth/registro", userData);
+        return res.data;
+      } catch (err) {
+        this.error =
+          err.response?.data?.erro ||
+          "Erro ao registrar usuário";
+
+        throw err;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    // 🔄 RESTAURA SESSÃO
+    restoreSession() {
+      const token = localStorage.getItem("token");
+      const user = localStorage.getItem("user");
+
+      if (token && user) {
+        this.token = token;
+        this.currentUser = JSON.parse(user);
+        this.isAuthenticated = true;
       }
     },
 
     logout() {
-      this.user = null
-      this.token = null
-      this.isAuthenticated = false
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
+      localStorage.clear();
+      window.location.href = "/login";
     },
 
-    initializeAuth() {
-      const token = localStorage.getItem('token')
-      const user = localStorage.getItem('user')
-
-      if (token && user) {
-        this.token = token
-        this.user = JSON.parse(user)
-        this.isAuthenticated = true
-      }
+    // 👥 USERS
+    async fetchUsers() {
+      const res = await api.get("/users");
+      this.users = res.data;
     }
   }
-})
+});
