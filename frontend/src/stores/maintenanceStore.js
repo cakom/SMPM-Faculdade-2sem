@@ -1,111 +1,38 @@
 import { defineStore } from "pinia";
 import api from "../services/api";
 
-export const useMachineStore = defineStore("machine", {
+export const useMaintenanceStore = defineStore("maintenance", {
+  state: () => ({
+    maintenances: [],
+    loading: false,
+    error: null
+  }),
 
-    // ===== STATE =====
-    state: () => ({
-        machines: [],
-        loading: false,
-        error: null
-    }),
-
-    // ===== GETTERS =====
-    getters: {
-        totalMachines: (state) => state.machines.length,
-
-        activeMachines: (state) =>
-            state.machines.filter(m => m.status === "ativa"),
-
-        machineById: (state) => {
-            return (id) => state.machines.find(m => m._id === id);
-        }
+  actions: {
+    async fetchMaintenances() {
+      this.loading = true;
+      try {
+        const { data } = await api.get("/manutencoes");
+        this.maintenances = data;
+      } finally {
+        this.loading = false;
+      }
     },
 
-    // ===== ACTIONS =====
-    actions: {
+    async addMaintenance(maintenance) {
+      const { data } = await api.post("/manutencoes", maintenance);
+      this.maintenances.unshift(data);
+    },
 
-        async fetchMachines() {
-            this.loading = true;
-            this.error = null;
+    async updateMaintenance(id, updates) {
+      const { data } = await api.put(`/manutencoes/${id}`, updates);
+      const index = this.maintenances.findIndex(m => m._id === id);
+      if (index !== -1) this.maintenances[index] = data;
+    },
 
-            try {
-                const res = await api.get("/maquinas");
-                this.machines = res.data;
-
-            } catch (err) {
-                this.error = err.response?.data?.erro || "Erro ao buscar máquinas";
-                console.error("Erro ao buscar máquinas:", err);
-                throw err;
-
-            } finally {
-                this.loading = false;
-            }
-        },
-
-        async addMachine(machine) {
-            this.loading = true;
-            this.error = null;
-
-            try {
-                const res = await api.post("/maquinas", machine);
-                this.machines.push(res.data);
-                return res.data;
-
-            } catch (err) {
-                this.error = err.response?.data?.erro || "Erro ao cadastrar máquina";
-                console.error("Erro ao cadastrar máquina:", err);
-                throw err;
-
-            } finally {
-                this.loading = false;
-            }
-        },
-
-        async updateMachine(id, updates) {
-            this.loading = true;
-            this.error = null;
-
-            try {
-                const res = await api.put(`/maquinas/${id}`, updates);
-
-                const index = this.machines.findIndex(m => m._id === id);
-                if (index !== -1) {
-                    this.machines[index] = res.data;
-                }
-
-                return res.data;
-
-            } catch (err) {
-                this.error = err.response?.data?.erro || "Erro ao atualizar máquina";
-                console.error("Erro ao atualizar máquina:", err);
-                throw err;
-
-            } finally {
-                this.loading = false;
-            }
-        },
-
-        async deleteMachine(id) {
-            this.loading = true;
-            this.error = null;
-
-            try {
-                await api.delete(`/maquinas/${id}`);
-                this.machines = this.machines.filter(m => m._id !== id);
-
-            } catch (err) {
-                this.error = err.response?.data?.erro || "Erro ao remover máquina";
-                console.error("Erro ao remover máquina:", err);
-                throw err;
-
-            } finally {
-                this.loading = false;
-            }
-        },
-
-        clearError() {
-            this.error = null;
-        }
+    async deleteMaintenance(id) {
+      await api.delete(`/manutencoes/${id}`);
+      this.maintenances = this.maintenances.filter(m => m._id !== id);
     }
+  }
 });

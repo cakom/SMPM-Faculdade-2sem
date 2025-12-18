@@ -20,53 +20,44 @@ export const useUserStore = defineStore("user", {
   },
 
   actions: {
-    // 🔐 LOGIN
     async login(email, senha) {
       this.loading = true;
       this.error = null;
 
       try {
-        const res = await api.post("/auth/login", { email, senha });
+        const { data } = await api.post("/auth/login", { email, senha });
 
-        this.token = res.data.token;
-        this.currentUser = res.data.usuario;
+        this.token = data.token;
+        this.currentUser = data.usuario;
         this.isAuthenticated = true;
 
-        localStorage.setItem("token", this.token);
-        localStorage.setItem("user", JSON.stringify(this.currentUser));
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.usuario));
 
-        return res.data;
+        return data;
       } catch (err) {
-        this.error =
-          err.response?.data?.erro ||
-          "Erro ao fazer login";
-
+        this.error = err.response?.data?.erro || "Erro ao fazer login";
         throw err;
       } finally {
         this.loading = false;
       }
     },
 
-    // 📝 REGISTRO
     async registro(userData) {
       this.loading = true;
       this.error = null;
 
       try {
-        const res = await api.post("/auth/registro", userData);
-        return res.data;
+        const { data } = await api.post("/auth/registro", userData);
+        return data;
       } catch (err) {
-        this.error =
-          err.response?.data?.erro ||
-          "Erro ao registrar usuário";
-
+        this.error = err.response?.data?.erro || "Erro ao registrar usuário";
         throw err;
       } finally {
         this.loading = false;
       }
     },
 
-    // 🔄 RESTAURA SESSÃO
     restoreSession() {
       const token = localStorage.getItem("token");
       const user = localStorage.getItem("user");
@@ -83,10 +74,9 @@ export const useUserStore = defineStore("user", {
       window.location.href = "/login";
     },
 
-    // 👥 USERS
     async fetchUsers() {
-      const res = await api.get("/users");
-      this.users = res.data;
+      const { data } = await api.get("/users");
+      this.users = data;
     }
   }
 });
